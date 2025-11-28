@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { DataStateService } from '../../core/services/data-state.service';
+import { DemoService } from '../../core/services/demo.service';
 import { ProjectService } from '../../core/services/project.service';
 
 @Component({
@@ -464,7 +467,7 @@ import { ProjectService } from '../../core/services/project.service';
     `,
   ],
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   syncing = false;
   syncResult: any = null;
   stats = {
@@ -473,16 +476,67 @@ export class DashboardComponent implements OnInit {
     tickets: 0,
     revisions: 0,
   };
+  private subscriptions: Subscription[] = [];
 
   constructor(
     private authService: AuthService,
+    private dataStateService: DataStateService,
+    private demoService: DemoService,
     private projectService: ProjectService,
     private router: Router,
     private snackBar: MatSnackBar
   ) {}
 
   ngOnInit(): void {
-    // Could load stats here if we had an endpoint for it
+    // Subscribe to state changes
+    const statsSubscription = this.dataStateService
+      .getStatsObservable()
+      .subscribe((stats) => {
+        this.stats = stats;
+      });
+    this.subscriptions.push(statsSubscription);
+
+    // Load existing data if available
+    this.loadExistingData();
+  }
+
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
+  }
+
+  private loadExistingData(): void {
+    // Load stats from the backend
+    this.demoService.getStats().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.dataStateService.updateStats(response.data.stats);
+        }
+      },
+      error: (error) => {
+        console.warn('Failed to load stats:', error);
+      },
+    });
+
+    // Load projects from the backend
+    if (!this.dataStateService.hasProjects()) {
+      this.dataStateService.setLoading('projects', true);
+      this.demoService.getProjects().subscribe({
+        next: (response) => {
+          this.dataStateService.setLoading('projects', false);
+          if (response.success && response.data) {
+            this.dataStateService.setProjects(response.data.bases || []);
+            console.log(
+              '✅ Loaded projects from database:',
+              response.data.bases?.length || 0
+            );
+          }
+        },
+        error: (error) => {
+          this.dataStateService.setLoading('projects', false);
+          console.warn('Failed to load projects from database:', error);
+        },
+      });
+    }
   }
 
   syncAll(): void {
@@ -500,10 +554,19 @@ export class DashboardComponent implements OnInit {
         this.syncing = false;
         this.syncResult = response;
         if (response.success && response.data?.synced) {
-          this.stats.projects = response.data.synced.bases || 0;
-          this.stats.tables = response.data.synced.tables || 0;
-          this.stats.tickets = response.data.synced.tickets || 0;
-          this.stats.revisions = response.data.synced.users || 0;
+          // Update state service with new stats from sync response
+          const syncStats = {
+            projects: response.data.synced.bases || 0,
+            tables: response.data.synced.tables || 0,
+            tickets: response.data.synced.tickets || 0,
+            revisions: response.data.synced.users || 0,
+          };
+          this.dataStateService.updateStats(syncStats);
+          this.dataStateService.setSyncTime(new Date());
+
+          // Force refresh data from database to get the actual persisted data
+          this.refreshDataAfterSync();
+
           this.showSuccess('Sync completed successfully!');
         }
       },
@@ -516,6 +579,43 @@ export class DashboardComponent implements OnInit {
         this.showError('Sync failed. Please try again.');
       },
     });
+  }
+
+  private refreshDataAfterSync(): void {
+    // Give the database a moment to process the sync
+    setTimeout(() => {
+      // Refresh stats from database
+      this.demoService.getStats().subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.dataStateService.updateStats(response.data.stats);
+            console.log('✅ Refreshed stats after sync:', response.data.stats);
+          }
+        },
+        error: (error) => {
+          console.warn('Failed to refresh stats after sync:', error);
+        },
+      });
+
+      // Refresh projects data
+      this.dataStateService.setLoading('projects', true);
+      this.demoService.getProjects().subscribe({
+        next: (response) => {
+          this.dataStateService.setLoading('projects', false);
+          if (response.success && response.data) {
+            this.dataStateService.setProjects(response.data.bases || []);
+            console.log(
+              '✅ Refreshed projects after sync:',
+              response.data.bases?.length || 0
+            );
+          }
+        },
+        error: (error) => {
+          this.dataStateService.setLoading('projects', false);
+          console.warn('Failed to refresh projects after sync:', error);
+        },
+      });
+    }, 1000); // Wait 1 second for database to process
   }
 
   logout(): void {

@@ -34,7 +34,19 @@ export class ProjectService {
     );
   }
 
+  /**
+   * Sync all data (bases, tables, tickets, users) from Airtable API
+   */
   syncAll(userId: string): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.API_URL}/all`, { userId });
+    const url = `${this.API_URL}/all`;
+    const payload = { userId };
+
+    console.log('🚀 [ProjectService] Calling syncAll API', {
+      url,
+      payload,
+      fullUrl: `${environment.apiBaseUrl}/sync/all`,
+    });
+
+    return this.http.post<ApiResponse>(url, payload);
   }
 }

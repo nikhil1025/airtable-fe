@@ -597,34 +597,44 @@ export class SettingsComponent implements OnInit {
     }
 
     const request = {
-      userId,
       email: this.airtableEmail.trim(),
       password: this.airtablePassword,
-      mfaCode: this.mfaCode || undefined,
     };
 
     console.log('[Settings] Sending auto-retrieve request');
 
     this.http
-      .post<any>(`${environment.apiBaseUrl}/cookies/auto-retrieve`, request)
+      .post<any>(`${environment.apiBaseUrl}/auth/validate`, request)
       .subscribe({
         next: (response) => {
           console.log('[Settings] Auto-retrieve response:', response);
           this.loading = false;
           if (response.success) {
+            // Update auth service with the new userId from authentication
+            if (response.data?.userId) {
+              this.authService.updateAuthState(response.data.userId, true);
+              console.log(
+                '[Settings] Updated auth service with new userId:',
+                response.data.userId
+              );
+            }
+
             this.showSuccess(
-              'Cookies automatically retrieved and stored successfully!'
+              `Authentication successful! Cookies extracted and stored. (${
+                response.data?.cookiesCount || 0
+              } cookies)`
             );
             this.cookieStatus = {
               valid: true,
-              message: 'Cookies automatically extracted and stored',
-              validUntil: response.data.validUntil,
+              message:
+                'Cookies automatically extracted and stored via new auth system',
+              validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
             };
             // Clear password for security
             this.airtablePassword = '';
             this.mfaCode = '';
-            // Refresh cookie display
-            this.loadCookiesForDisplay();
+            // Refresh cookie display with new userId
+            setTimeout(() => this.loadCookiesForDisplay(), 1000);
           }
         },
         error: (error) => {

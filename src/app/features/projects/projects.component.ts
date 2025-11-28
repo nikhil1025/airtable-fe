@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -14,8 +14,10 @@ import {
   GridReadyEvent,
   ModuleRegistry,
 } from 'ag-grid-community';
+import { Subscription } from 'rxjs';
 import { AirtableBase } from '../../core/models/project.model';
 import { AuthService } from '../../core/services/auth.service';
+import { DataStateService } from '../../core/services/data-state.service';
 import { ProjectService } from '../../core/services/project.service';
 
 // Register AG Grid Community modules (FREE version)
@@ -442,8 +444,9 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     `,
   ],
 })
-export class ProjectsComponent implements OnInit {
+export class ProjectsComponent implements OnInit, OnDestroy {
   private gridApi!: GridApi;
+  private subscriptions: Subscription[] = [];
   rowData: AirtableBase[] = [];
   loading = false;
   searchText = '';
@@ -480,6 +483,7 @@ export class ProjectsComponent implements OnInit {
   constructor(
     private projectService: ProjectService,
     public authService: AuthService, // Made public for template access
+    private dataStateService: DataStateService,
     private router: Router,
     private snackBar: MatSnackBar
   ) {}
@@ -490,7 +494,32 @@ export class ProjectsComponent implements OnInit {
       '🔐 [Projects] Current userId from AuthService:',
       this.authService.currentUserId
     );
+
+    // Subscribe to projects state
+    const projectsSubscription = this.dataStateService
+      .getProjectsObservable()
+      .subscribe((projects) => {
+        this.rowData = projects;
+        console.log(
+          '📊 [Projects] State updated with projects:',
+          projects.length
+        );
+      });
+    this.subscriptions.push(projectsSubscription);
+
+    // Subscribe to loading state
+    const loadingSubscription = this.dataStateService
+      .getLoadingObservable()
+      .subscribe((loading) => {
+        this.loading = loading.projects;
+      });
+    this.subscriptions.push(loadingSubscription);
+
     this.loadProjects();
+  }
+
+  ngOnDestroy() {
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
   onGridReady(params: GridReadyEvent) {
@@ -509,7 +538,6 @@ export class ProjectsComponent implements OnInit {
   }
 
   loadProjects() {
-    this.loading = true;
     const userId = this.authService.currentUserId;
 
     console.log('🔍 [Projects] Loading projects from cache...', { userId });
@@ -517,11 +545,17 @@ export class ProjectsComponent implements OnInit {
     if (!userId) {
       console.error('❌ [Projects] No userId - user not authenticated');
       this.showError('User not authenticated. Please login first.');
-      this.loading = false;
       this.router.navigate(['/login']);
       return;
     }
 
+    // If projects are already loaded in state, don't reload
+    if (this.dataStateService.hasProjects()) {
+      console.log('✅ [Projects] Projects already loaded from state');
+      return;
+    }
+
+    this.dataStateService.setLoading('projects', true);
     console.log(
       '📡 [Projects] Calling getBases API (cached) with userId:',
       userId
@@ -531,10 +565,14 @@ export class ProjectsComponent implements OnInit {
     this.projectService.getBases(userId).subscribe({
       next: (response) => {
         console.log('✅ [Projects] API Response:', response);
+        this.dataStateService.setLoading('projects', false);
         if (response.success && response.data) {
-          this.rowData = response.data.bases;
-          console.log('✅ [Projects] Loaded bases from cache:', this.rowData);
-          if (this.rowData.length > 0) {
+          this.dataStateService.setProjects(response.data.bases || []);
+          console.log(
+            '✅ [Projects] Loaded bases from cache:',
+            response.data.bases
+          );
+          if (response.data.bases && response.data.bases.length > 0) {
             this.showSuccess(
               `Loaded ${response.data.bases.length} projects from cache`
             );
@@ -546,14 +584,13 @@ export class ProjectsComponent implements OnInit {
         } else {
           console.warn('⚠️ [Projects] No data in response:', response);
         }
-        this.loading = false;
       },
       error: (error) => {
         console.error('❌ [Projects] Error loading projects:', error);
+        this.dataStateService.setLoading('projects', false);
         this.showError(
           'Failed to load projects: ' + (error.message || 'Unknown error')
         );
-        this.loading = false;
       },
     });
   }

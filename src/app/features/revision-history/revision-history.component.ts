@@ -6,15 +6,25 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
-    AllCommunityModule,
-    ColDef,
-    GridApi,
-    GridReadyEvent,
-    ModuleRegistry
+  AllCommunityModule,
+  ColDef,
+  GridApi,
+  GridReadyEvent,
+  ModuleRegistry,
 } from 'ag-grid-community';
 import { RevisionHistory } from '../../core/models/revision-history.model';
 import { AuthService } from '../../core/services/auth.service';
 import { RevisionHistoryService } from '../../core/services/revision-history.service';
+
+interface AutomationRevision {
+  uuid: string;
+  issueId: string;
+  columnType: string;
+  oldValue: string;
+  newValue: string;
+  createdDate: string;
+  authoredBy: string;
+}
 
 // Register AG Grid Community modules (FREE version)
 ModuleRegistry.registerModules([AllCommunityModule]);
