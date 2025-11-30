@@ -549,11 +549,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // If projects are already loaded in state, don't reload
-    if (this.dataStateService.hasProjects()) {
-      console.log('✅ [Projects] Projects already loaded from state');
-      return;
-    }
+    // Always fetch fresh data from API - no caching
 
     this.dataStateService.setLoading('projects', true);
     console.log(

@@ -113,4 +113,21 @@ export class AuthService {
       }
     }
   }
+
+  /**
+   * Get or generate a persistent user ID that stays consistent across sessions
+   */
+  getPersistentUserId(): string {
+    const PERSISTENT_USER_KEY = 'airtable_persistent_user_id';
+    let userId = localStorage.getItem(PERSISTENT_USER_KEY);
+
+    if (!userId) {
+      // Generate a new persistent user ID only if none exists
+      userId =
+        'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem(PERSISTENT_USER_KEY, userId);
+    }
+
+    return userId;
+  }
 }

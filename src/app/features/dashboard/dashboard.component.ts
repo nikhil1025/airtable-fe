@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataStateService } from '../../core/services/data-state.service';
 import { DemoService } from '../../core/services/demo.service';
 import { ProjectService } from '../../core/services/project.service';
+import { RealDataService } from '../../core/services/real-data.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -482,6 +483,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private dataStateService: DataStateService,
     private demoService: DemoService,
+    private realDataService: RealDataService,
     private projectService: ProjectService,
     private router: Router,
     private snackBar: MatSnackBar
@@ -505,38 +507,80 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadExistingData(): void {
-    // Load stats from the backend
-    this.demoService.getStats().subscribe({
+    const userId = this.authService.currentUserId;
+    if (!userId) {
+      console.warn('No user ID available for loading data');
+      return;
+    }
+
+    // Try to load real stats from database first
+    this.realDataService.getStats(userId).subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.dataStateService.updateStats(response.data.stats);
+          console.log(
+            '✅ Loaded real stats from database:',
+            response.data.stats
+          );
         }
       },
       error: (error) => {
-        console.warn('Failed to load stats:', error);
+        console.warn('Failed to load real stats, falling back to demo:', error);
+        // Fallback to demo data if real data fails
+        this.demoService.getStats().subscribe({
+          next: (response) => {
+            if (response.success && response.data) {
+              this.dataStateService.updateStats(response.data.stats);
+              console.log(
+                '📊 Loaded demo stats as fallback:',
+                response.data.stats
+              );
+            }
+          },
+          error: (demoError) => {
+            console.warn('Failed to load demo stats:', demoError);
+          },
+        });
       },
     });
 
-    // Load projects from the backend
-    if (!this.dataStateService.hasProjects()) {
-      this.dataStateService.setLoading('projects', true);
-      this.demoService.getProjects().subscribe({
-        next: (response) => {
-          this.dataStateService.setLoading('projects', false);
-          if (response.success && response.data) {
-            this.dataStateService.setProjects(response.data.bases || []);
-            console.log(
-              '✅ Loaded projects from database:',
-              response.data.bases?.length || 0
-            );
-          }
-        },
-        error: (error) => {
-          this.dataStateService.setLoading('projects', false);
-          console.warn('Failed to load projects from database:', error);
-        },
-      });
-    }
+    // Always load fresh projects from the backend API
+    this.dataStateService.setLoading('projects', true);
+    this.realDataService.getProjects(userId).subscribe({
+      next: (response) => {
+        this.dataStateService.setLoading('projects', false);
+        if (response.success && response.data) {
+          this.dataStateService.setProjects(response.data.bases || []);
+          console.log(
+            '✅ Loaded real projects from database:',
+            response.data.bases?.length || 0
+          );
+        }
+      },
+      error: (error) => {
+        console.warn(
+          'Failed to load real projects, falling back to demo:',
+          error
+        );
+        // Fallback to demo data
+        this.demoService.getProjects().subscribe({
+          next: (response) => {
+            this.dataStateService.setLoading('projects', false);
+            if (response.success && response.data) {
+              this.dataStateService.setProjects(response.data.bases || []);
+              console.log(
+                '📁 Loaded demo projects as fallback:',
+                response.data.bases?.length || 0
+              );
+            }
+          },
+          error: (demoError) => {
+            this.dataStateService.setLoading('projects', false);
+            console.warn('Failed to load demo projects:', demoError);
+          },
+        });
+      },
+    });
   }
 
   syncAll(): void {
@@ -549,7 +593,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.syncing = true;
     this.syncResult = null;
 
-    this.projectService.syncAll(userId).subscribe({
+    // Use fresh sync that bypasses cookie issues
+    this.realDataService.syncFresh(userId).subscribe({
       next: (response) => {
         this.syncing = false;
         this.syncResult = response;
@@ -582,37 +627,43 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private refreshDataAfterSync(): void {
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
     // Give the database a moment to process the sync
     setTimeout(() => {
-      // Refresh stats from database
-      this.demoService.getStats().subscribe({
+      // Refresh stats from real database
+      this.realDataService.getStats(userId).subscribe({
         next: (response) => {
           if (response.success && response.data) {
             this.dataStateService.updateStats(response.data.stats);
-            console.log('✅ Refreshed stats after sync:', response.data.stats);
+            console.log(
+              '✅ Refreshed real stats after sync:',
+              response.data.stats
+            );
           }
         },
         error: (error) => {
-          console.warn('Failed to refresh stats after sync:', error);
+          console.warn('Failed to refresh real stats after sync:', error);
         },
       });
 
-      // Refresh projects data
+      // Refresh projects data from real database
       this.dataStateService.setLoading('projects', true);
-      this.demoService.getProjects().subscribe({
+      this.realDataService.getProjects(userId).subscribe({
         next: (response) => {
           this.dataStateService.setLoading('projects', false);
           if (response.success && response.data) {
             this.dataStateService.setProjects(response.data.bases || []);
             console.log(
-              '✅ Refreshed projects after sync:',
+              '✅ Refreshed real projects after sync:',
               response.data.bases?.length || 0
             );
           }
         },
         error: (error) => {
           this.dataStateService.setLoading('projects', false);
-          console.warn('Failed to refresh projects after sync:', error);
+          console.warn('Failed to refresh real projects after sync:', error);
         },
       });
     }, 1000); // Wait 1 second for database to process

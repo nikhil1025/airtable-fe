@@ -47,8 +47,7 @@ export class DataStateService {
   public state$ = this.stateSubject.asObservable();
 
   constructor() {
-    // Load state from localStorage on initialization
-    this.loadStateFromStorage();
+    // Initialize with empty state - always fetch from APIs
   }
 
   get currentState(): AppState {
@@ -160,7 +159,7 @@ export class DataStateService {
   // Clear all data (on logout)
   clearState(): void {
     this.updateState(this.initialState);
-    localStorage.removeItem('airtable-app-state');
+    // No localStorage to clear - using APIs only
   }
 
   // Observables for specific data
@@ -189,9 +188,7 @@ export class DataStateService {
   }
 
   // Check if data exists
-  hasProjects(): boolean {
-    return this.currentState.projects.length > 0;
-  }
+  // Removed hasProjects - always fetch fresh data
 
   hasTables(projectId: string): boolean {
     return (this.currentState.tables[projectId] || []).length > 0;
@@ -204,40 +201,10 @@ export class DataStateService {
   // Private methods
   private updateState(newState: AppState): void {
     this.stateSubject.next(newState);
-    this.saveStateToStorage(newState);
+    // No localStorage caching - use APIs for fresh data
   }
 
-  private saveStateToStorage(state: AppState): void {
-    try {
-      const stateToSave = {
-        ...state,
-        // Don't save loading states
-        loading: this.initialState.loading,
-      };
-      localStorage.setItem('airtable-app-state', JSON.stringify(stateToSave));
-    } catch (error) {
-      console.warn('Failed to save state to localStorage:', error);
-    }
-  }
+  // Removed localStorage caching - always fetch fresh data from APIs
 
-  private loadStateFromStorage(): void {
-    try {
-      const savedState = localStorage.getItem('airtable-app-state');
-      if (savedState) {
-        const parsedState = JSON.parse(savedState);
-        // Merge with initial state to ensure all properties exist
-        const restoredState: AppState = {
-          ...this.initialState,
-          ...parsedState,
-          // Convert date string back to Date object
-          lastSyncTime: parsedState.lastSyncTime
-            ? new Date(parsedState.lastSyncTime)
-            : null,
-        };
-        this.stateSubject.next(restoredState);
-      }
-    } catch (error) {
-      console.warn('Failed to load state from localStorage:', error);
-    }
-  }
+  // Removed localStorage loading - always start with fresh state
 }

@@ -50,48 +50,6 @@ interface AutomationProgress {
           </div>
 
           <div *ngIf="!loading">
-            <!-- Quick Login with Existing User -->
-            <div class="quick-login-section">
-              <h3>Quick Login (Testing)</h3>
-              <p class="helper-text">
-                Login with an existing authenticated user
-              </p>
-              <select
-                [(ngModel)]="selectedUserId"
-                class="user-select"
-                (change)="onUserSelect()"
-              >
-                <option value="">Select a user...</option>
-                <option *ngFor="let user of availableUsers" [value]="user.id">
-                  {{ user.label }}
-                </option>
-              </select>
-              <button
-                class="btn btn-success btn-block"
-                (click)="quickLogin()"
-                [disabled]="!selectedUserId"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <path
-                    d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"
-                  ></path>
-                </svg>
-                Quick Login
-              </button>
-            </div>
-
-            <div class="divider">
-              <span>OR</span>
-            </div>
-
             <!-- OAuth Login -->
             <button
               class="btn btn-primary btn-block btn-large"
@@ -114,169 +72,6 @@ interface AutomationProgress {
               </svg>
               Connect New Airtable Account
             </button>
-
-            <div class="divider">
-              <span>OR</span>
-            </div>
-
-            <!-- Manual Authentication & Bulk Automation -->
-            <div class="manual-auth-section">
-              <button
-                class="btn btn-outline btn-block"
-                (click)="toggleManualAuth()"
-                [disabled]="loading"
-              >
-                {{ showManualAuth ? 'Hide' : '🔧 Show' }} Manual Auth & Bulk
-                Automation
-              </button>
-
-              <div *ngIf="showManualAuth" class="manual-auth-content">
-                <h3>🔐 Manual Authentication & Bulk Automation</h3>
-                <p class="helper-text">
-                  Enter your Airtable credentials for bulk revision history
-                  processing
-                </p>
-
-                <form (ngSubmit)="authenticateManual()" class="manual-form">
-                  <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input
-                      id="email"
-                      type="email"
-                      [(ngModel)]="manualCredentials.email"
-                      name="email"
-                      placeholder="your-email@example.com"
-                      required
-                      class="form-input"
-                    />
-                  </div>
-
-                  <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input
-                      id="password"
-                      type="password"
-                      [(ngModel)]="manualCredentials.password"
-                      name="password"
-                      placeholder="Your Airtable password"
-                      required
-                      class="form-input"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    class="btn btn-primary btn-block"
-                    [disabled]="
-                      loading ||
-                      !manualCredentials.email ||
-                      !manualCredentials.password
-                    "
-                  >
-                    {{ loading ? 'Authenticating...' : 'Authenticate' }}
-                  </button>
-                </form>
-
-                <!-- Authentication Status -->
-                <div
-                  *ngIf="authStatus"
-                  class="auth-status"
-                  [ngClass]="authStatus.status"
-                >
-                  <h4>
-                    {{
-                      authStatus.status === 'success'
-                        ? '✅ Authentication Successful'
-                        : '❌ Authentication Failed'
-                    }}
-                  </h4>
-                  <p>{{ authStatus.message }}</p>
-
-                  <div
-                    *ngIf="authStatus.status === 'success'"
-                    class="action-buttons"
-                  >
-                    <button
-                      (click)="startBulkAutomation()"
-                      class="btn btn-success btn-block"
-                      [disabled]="loading || automationInProgress"
-                    >
-                      {{
-                        automationInProgress
-                          ? 'Processing...'
-                          : '🚀 Start Bulk Automation'
-                      }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Progress Indicator -->
-                <div *ngIf="automationProgress" class="progress-section">
-                  <h4>⚡ Automation in Progress</h4>
-                  <div class="progress-bar">
-                    <div
-                      class="progress-fill"
-                      [style.width.%]="automationProgress.percent"
-                    ></div>
-                  </div>
-                  <p>{{ automationProgress.message }}</p>
-                </div>
-
-                <!-- Results Display -->
-                <div *ngIf="automationResults" class="results-section">
-                  <h4>📊 Automation Results</h4>
-                  <div class="results-summary">
-                    <div class="stat">
-                      <span class="stat-number">{{ getSuccessCount() }}</span>
-                      <span class="stat-label">Successful</span>
-                    </div>
-                    <div class="stat">
-                      <span class="stat-number">{{ getErrorCount() }}</span>
-                      <span class="stat-label">Failed</span>
-                    </div>
-                    <div class="stat">
-                      <span class="stat-number">{{ getTotalCount() }}</span>
-                      <span class="stat-label">Total</span>
-                    </div>
-                  </div>
-
-                  <div class="results-actions">
-                    <button (click)="downloadResults()" class="btn btn-primary">
-                      📥 Download Results
-                    </button>
-                    <button
-                      (click)="toggleResultsDetails()"
-                      class="btn btn-outline"
-                    >
-                      {{ showResultsDetails ? 'Hide' : 'Show' }} Details
-                    </button>
-                  </div>
-
-                  <!-- Detailed Results -->
-                  <div *ngIf="showResultsDetails" class="detailed-results">
-                    <div
-                      *ngFor="let result of automationResults"
-                      class="result-item"
-                      [ngClass]="result.status"
-                    >
-                      <div class="result-header">
-                        <span class="record-id">{{ result.recordId }}</span>
-                        <span class="status-badge" [ngClass]="result.status">
-                          {{ result.status === 'success' ? '✅' : '❌' }}
-                          {{ result.status }}
-                        </span>
-                      </div>
-                      <div *ngIf="result.data" class="result-data">
-                        <pre>{{ formatJsonOutput(result.data) }}</pre>
-                      </div>
-                      <div *ngIf="result.error" class="result-error">
-                        <p>{{ result.error }}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div *ngIf="error" class="error-message">
@@ -805,8 +600,8 @@ export class LoginComponent {
     this.loadingMessage = 'Redirecting to Airtable...';
     this.error = '';
 
-    // Generate a random user ID or use a fixed one
-    const userId = 'user_' + Date.now();
+    // Get or generate a persistent user ID that stays consistent across sessions
+    const userId = this.authService.getPersistentUserId();
 
     this.authService.initiateOAuth(userId).subscribe({
       next: (response: any) => {

@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -13,9 +15,7 @@ import { AuthService } from '../../../core/services/auth.service';
         <div *ngIf="loading" class="loading-state">
           <div class="spinner-large"></div>
           <h2>Authenticating...</h2>
-          <p class="text-zinc-500">
-            Validating your authentication...
-          </p>
+          <p class="text-zinc-500">Validating your authentication...</p>
         </div>
 
         <div *ngIf="!loading && success" class="success-state">
@@ -125,7 +125,8 @@ export class OauthCallbackComponent implements OnInit {
   constructor(
     private route: ActivatedRoute,
     private router: Router,
-    private authService: AuthService
+    private authService: AuthService,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -166,15 +167,8 @@ export class OauthCallbackComponent implements OnInit {
     this.authService.validateAuth(userId).subscribe({
       next: (response: any) => {
         if (response.data?.isAuthenticated) {
-          // Update local auth state
-          this.authService.updateAuthState(userId, true);
-          this.loading = false;
-          this.success = true;
-          
-          // Redirect to dashboard after a short delay
-          setTimeout(() => {
-            this.router.navigate(['/dashboard']);
-          }, 1500);
+          // Fetch OAuth tokens and store them in localStorage
+          this.fetchAndStoreTokens(userId);
         } else {
           this.loading = false;
           this.error = 'Authentication could not be verified';
@@ -183,8 +177,53 @@ export class OauthCallbackComponent implements OnInit {
       error: () => {
         this.loading = false;
         this.error = 'Failed to validate authentication. Please try again.';
-      }
+      },
     });
+  }
+
+  private fetchAndStoreTokens(userId: string): void {
+    // Fetch OAuth tokens from backend
+    this.http
+      .get(`${environment.apiBaseUrl}/oauth/tokens/${userId}`)
+      .subscribe({
+        next: (tokenResponse: any) => {
+          if (tokenResponse.success && tokenResponse.data) {
+            // Store OAuth tokens in localStorage for frontend use
+            const tokens = {
+              accessToken: tokenResponse.data.accessToken,
+              refreshToken: tokenResponse.data.refreshToken,
+              userId: tokenResponse.data.userId,
+            };
+
+            localStorage.setItem('airtable_tokens', JSON.stringify(tokens));
+
+            console.log('✅ OAuth tokens stored in localStorage:', {
+              accessToken: tokens.accessToken.substring(0, 20) + '...',
+              refreshToken: tokens.refreshToken.substring(0, 20) + '...',
+            });
+
+            // Update local auth state
+            this.authService.updateAuthState(userId, true, tokens.accessToken);
+            this.loading = false;
+            this.success = true;
+
+            // Redirect to dashboard after a short delay
+            setTimeout(() => {
+              this.router.navigate(['/dashboard']);
+            }, 1500);
+          } else {
+            console.warn('⚠️ No OAuth tokens found in response');
+            this.loading = false;
+            this.error = 'OAuth tokens not found. Please try logging in again.';
+          }
+        },
+        error: (error) => {
+          console.error('❌ Failed to fetch OAuth tokens:', error);
+          this.loading = false;
+          this.error =
+            'Failed to retrieve authentication tokens. Please try again.';
+        },
+      });
   }
 
   redirectToLogin(): void {

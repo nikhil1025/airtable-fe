@@ -1,7 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
@@ -12,21 +16,19 @@ import {
   GridReadyEvent,
   ModuleRegistry,
 } from 'ag-grid-community';
-import { RevisionHistory } from '../../core/models/revision-history.model';
+import { Subscription } from 'rxjs';
+import { AirtableBase } from '../../core/models/project.model';
+import { AirtableTable } from '../../core/models/table.model';
 import { AuthService } from '../../core/services/auth.service';
-import { RevisionHistoryService } from '../../core/services/revision-history.service';
+import { DataStateService } from '../../core/services/data-state.service';
+import { ProjectService } from '../../core/services/project.service';
+import {
+  RevisionHistoryRecord,
+  RevisionHistoryService,
+} from '../../core/services/revision-history.service';
+import { TableService } from '../../core/services/table.service';
 
-interface AutomationRevision {
-  uuid: string;
-  issueId: string;
-  columnType: string;
-  oldValue: string;
-  newValue: string;
-  createdDate: string;
-  authoredBy: string;
-}
-
-// Register AG Grid Community modules (FREE version)
+// Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
@@ -37,7 +39,11 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     RouterModule,
     AgGridAngular,
     MatButtonModule,
+    MatIconModule,
+    MatProgressSpinnerModule,
     MatSnackBarModule,
+    MatSelectModule,
+    MatFormFieldModule,
     FormsModule,
   ],
   template: `
@@ -85,98 +91,145 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         <div class="dashboard-header">
           <div>
             <h1>Revision History</h1>
-            <p class="subtitle">Track all sync operations and data changes</p>
+            <p class="subtitle">
+              Track changes and modifications to your records
+            </p>
           </div>
           <div class="header-actions">
+            <mat-form-field appearance="outline" class="base-select">
+              <mat-label>Select Base</mat-label>
+              <mat-select
+                [(value)]="selectedBaseId"
+                (selectionChange)="onBaseChange()"
+              >
+                <mat-option value="">All Bases</mat-option>
+                <mat-option *ngFor="let base of bases" [value]="base.id">
+                  {{ base.name }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field
+              appearance="outline"
+              class="table-select"
+              *ngIf="selectedBaseId"
+            >
+              <mat-label>Select Table</mat-label>
+              <mat-select
+                [(value)]="selectedTableId"
+                (selectionChange)="onTableChange()"
+              >
+                <mat-option value="">All Tables</mat-option>
+                <mat-option *ngFor="let table of tables" [value]="table.id">
+                  {{ table.name }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
             <button
               class="btn btn-primary"
-              (click)="loadHistory()"
-              [disabled]="loading"
+              (click)="syncRevisionHistory()"
+              [disabled]="loading || !selectedBaseId || !selectedTableId"
             >
               <span *ngIf="loading" class="spinner"></span>
-              <span *ngIf="!loading">Refresh</span>
+              <span *ngIf="!loading">🔄 Sync History</span>
             </button>
+
             <button
               class="btn btn-secondary"
-              (click)="exportData()"
-              [disabled]="!rowData.length"
+              (click)="refreshData()"
+              [disabled]="refreshing"
             >
-              Export CSV
+              <span *ngIf="refreshing" class="spinner"></span>
+              <span *ngIf="!refreshing">↻ Refresh</span>
             </button>
           </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-icon">📜</div>
-            <div class="stat-content">
-              <div class="stat-label">Total Changes</div>
-              <div class="stat-value">{{ rowData.length }}</div>
+        <div class="content-area" *ngIf="!loading">
+          <!-- Cookie Status Alert -->
+          <div class="alert alert-warning" *ngIf="!cookiesValid">
+            <div class="alert-content">
+              <span class="alert-icon">⚠️</span>
+              <div class="alert-text">
+                <strong>Authentication Required</strong>
+                <p>
+                  Your cookies have expired. Please login again to extract
+                  revision history.
+                </p>
+              </div>
+              <button
+                class="btn btn-sm btn-primary"
+                (click)="redirectToLogin()"
+              >
+                Login
+              </button>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon">✅</div>
-            <div class="stat-content">
-              <div class="stat-label">Status Changes</div>
-              <div class="stat-value">{{ getSuccessCount() }}</div>
+          <!-- Data Grid -->
+          <div class="data-section">
+            <div class="section-header">
+              <h3>Revision History Records</h3>
+              <div class="section-actions">
+                <input
+                  type="text"
+                  placeholder="Search revisions..."
+                  class="search-input"
+                  [(ngModel)]="searchText"
+                  (input)="onSearchChange()"
+                />
+                <button
+                  class="btn btn-outline btn-sm"
+                  (click)="exportData()"
+                  [disabled]="!rowData.length"
+                >
+                  📊 Export CSV
+                </button>
+              </div>
+            </div>
+
+            <div class="grid-container">
+              <ag-grid-angular
+                class="ag-theme-alpine data-grid"
+                [columnDefs]="columnDefs"
+                [rowData]="rowData"
+                [defaultColDef]="defaultColDef"
+                [pagination]="true"
+                [paginationPageSize]="50"
+                [animateRows]="true"
+                [suppressCellFocus]="true"
+                (gridReady)="onGridReady($event)"
+              >
+              </ag-grid-angular>
             </div>
           </div>
 
-          <div class="stat-card">
-            <div class="stat-icon">👤</div>
-            <div class="stat-content">
-              <div class="stat-label">Assignee Changes</div>
-              <div class="stat-value">{{ getFailedCount() }}</div>
+          <!-- No Data State -->
+          <div class="no-data-state" *ngIf="rowData.length === 0 && !loading">
+            <div class="no-data-content">
+              <div class="no-data-icon">📜</div>
+              <h3>No Revision History Found</h3>
+              <p>
+                Select a base and table, then click "Sync History" to extract
+                revision history data.
+              </p>
+              <button
+                class="btn btn-primary"
+                (click)="syncRevisionHistory()"
+                [disabled]="!selectedBaseId || !selectedTableId"
+              >
+                🔄 Sync History
+              </button>
             </div>
           </div>
-        </div>
-
-        <!-- Search Bar -->
-        <div class="search-bar" *ngIf="rowData.length > 0">
-          <input
-            type="text"
-            placeholder="Search revision history..."
-            [(ngModel)]="searchText"
-            (input)="onSearchChange()"
-            class="search-input"
-          />
         </div>
 
         <!-- Loading State -->
-        <div class="card loading-state" *ngIf="loading">
-          <div class="loading-content">
-            <div class="spinner"></div>
-            <p>Loading revision history...</p>
-          </div>
-        </div>
-
-        <!-- AG Grid Table -->
-        <div class="card grid-container" *ngIf="!loading && rowData.length > 0">
-          <ag-grid-angular
-            class="ag-theme-alpine"
-            style="width: 100%; height: 500px;"
-            [theme]="'legacy'"
-            [rowData]="rowData"
-            [columnDefs]="columnDefs"
-            [defaultColDef]="defaultColDef"
-            [pagination]="true"
-            [paginationPageSize]="20"
-            [paginationPageSizeSelector]="[10, 20, 50, 100]"
-            [animateRows]="true"
-            (gridReady)="onGridReady($event)"
-          />
-        </div>
-
-        <!-- Empty State -->
-        <div class="card empty-state" *ngIf="!loading && rowData.length === 0">
-          <div class="empty-icon">📜</div>
-          <h3>No Revision History</h3>
-          <p>Sync some data to see the revision history</p>
-          <button class="btn btn-primary" routerLink="/projects">
-            Go to Projects
-          </button>
+        <div class="loading-state" *ngIf="loading">
+          <div class="spinner-large"></div>
+          <h3>Extracting Revision History...</h3>
+          <p>Please wait while we scrape revision history from Airtable.</p>
         </div>
       </main>
     </div>
@@ -186,249 +239,392 @@ ModuleRegistry.registerModules([AllCommunityModule]);
       .dashboard-layout {
         display: flex;
         min-height: 100vh;
+        background: #fafafa;
       }
+
       .sidebar {
-        width: 260px;
+        width: 240px;
         background: white;
         border-right: 1px solid #e4e4e7;
         display: flex;
         flex-direction: column;
       }
+
       .sidebar-header {
         padding: 1.5rem;
         border-bottom: 1px solid #e4e4e7;
       }
+
       .sidebar-header h2 {
-        font-size: 1.25rem;
-        font-weight: 700;
         margin: 0;
+        color: #27272a;
+        font-size: 1.25rem;
+        font-weight: 600;
       }
+
       .nav-menu {
         flex: 1;
-        padding: 1rem;
+        padding: 1rem 0;
       }
+
       .nav-item {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        border-radius: 6px;
+        padding: 0.75rem 1.5rem;
         color: #52525b;
         text-decoration: none;
-        margin-bottom: 0.25rem;
         transition: all 0.2s;
+        border-left: 2px solid transparent;
       }
+
       .nav-item:hover {
         background: #f4f4f5;
-        color: #18181b;
+        color: #27272a;
       }
+
       .nav-item.active {
-        background: #18181b;
-        color: white;
+        background: #f4f4f5;
+        color: #2563eb;
+        border-left-color: #2563eb;
       }
+
       .nav-icon {
-        font-size: 1.25rem;
+        font-size: 1.2rem;
       }
+
       .sidebar-footer {
-        padding: 1rem;
+        padding: 1.5rem;
         border-top: 1px solid #e4e4e7;
       }
+
       .main-content {
         flex: 1;
-        padding: 2rem;
-        background: #fafafa;
+        display: flex;
+        flex-direction: column;
       }
+
       .dashboard-header {
+        background: white;
+        padding: 2rem;
+        border-bottom: 1px solid #e4e4e7;
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 2rem;
+        gap: 2rem;
       }
+
       .dashboard-header h1 {
-        font-size: 1.875rem;
-        font-weight: 700;
         margin: 0;
+        color: #27272a;
+        font-size: 2rem;
+        font-weight: 600;
       }
+
       .subtitle {
-        color: #71717a;
-        margin-top: 0.25rem;
+        margin: 0.5rem 0 0 0;
+        color: #6b7280;
+        font-size: 1rem;
       }
+
       .header-actions {
         display: flex;
-        gap: 0.75rem;
+        gap: 1rem;
+        align-items: center;
       }
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
+
+      .base-select,
+      .table-select {
+        min-width: 200px;
+      }
+
+      .content-area {
+        flex: 1;
+        padding: 2rem;
+      }
+
+      .alert {
+        padding: 1rem;
+        border-radius: 8px;
         margin-bottom: 2rem;
       }
-      .stat-card {
-        background: white;
-        border: 1px solid #e4e4e7;
-        border-radius: 8px;
-        padding: 1.5rem;
+
+      .alert-warning {
+        background: #fef3c7;
+        border: 1px solid #f59e0b;
+        color: #92400e;
+      }
+
+      .alert-content {
         display: flex;
+        align-items: center;
         gap: 1rem;
       }
-      .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 8px;
+
+      .alert-icon {
+        font-size: 1.5rem;
+      }
+
+      .alert-text {
+        flex: 1;
+      }
+
+      .alert-text strong {
+        display: block;
+        margin-bottom: 0.25rem;
+      }
+
+      .data-section {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e4e4e7;
+        overflow: hidden;
+      }
+
+      .section-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e4e4e7;
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .section-header h3 {
+        margin: 0;
+        color: #27272a;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .section-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+      }
+
+      .search-input {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d4d4d8;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        min-width: 200px;
+      }
+
+      .grid-container {
+        height: 600px;
+      }
+
+      .data-grid {
+        width: 100%;
+        height: 100%;
+      }
+
+      .no-data-state {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: #f4f4f5;
+        min-height: 400px;
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #e4e4e7;
+      }
+
+      .no-data-content {
+        text-align: center;
+        max-width: 400px;
+      }
+
+      .no-data-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+      }
+
+      .no-data-content h3 {
+        margin: 0 0 1rem 0;
+        color: #52525b;
         font-size: 1.5rem;
       }
-      .stat-content {
-        flex: 1;
+
+      .no-data-content p {
+        margin: 0 0 2rem 0;
+        color: #6b7280;
+        line-height: 1.6;
       }
-      .stat-label {
-        font-size: 0.875rem;
-        color: #71717a;
-        margin: 0;
-      }
-      .stat-value {
-        font-size: 1.875rem;
-        font-weight: 700;
-        margin: 0.25rem 0 0 0;
-      }
-      .search-bar {
-        margin-bottom: 1.5rem;
-      }
-      .search-input {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 1px solid #e4e4e7;
-        border-radius: 6px;
-        font-size: 0.875rem;
-      }
-      .card {
-        background: white;
-        border: 1px solid #e4e4e7;
-        border-radius: 8px;
-        padding: 1.5rem;
-      }
-      .grid-container {
-        padding: 0;
-        overflow: hidden;
-      }
+
       .loading-state {
-        text-align: center;
-        padding: 3rem;
-      }
-      .loading-content {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 1rem;
+        justify-content: center;
+        flex: 1;
+        text-align: center;
       }
-      .spinner {
-        width: 40px;
-        height: 40px;
+
+      .spinner-large {
+        width: 48px;
+        height: 48px;
         border: 3px solid #e4e4e7;
-        border-top-color: #18181b;
+        border-top-color: #2563eb;
         border-radius: 50%;
         animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
       }
+
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid transparent;
+        border-top-color: currentColor;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        display: inline-block;
+        margin-right: 0.5rem;
+      }
+
       @keyframes spin {
         to {
           transform: rotate(360deg);
         }
       }
-      .empty-state {
-        text-align: center;
-        padding: 3rem;
-      }
-      .empty-icon {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-      }
-      .empty-state h3 {
-        margin: 0 0 0.5rem 0;
-      }
-      .empty-state p {
-        color: #71717a;
-        margin-bottom: 1.5rem;
-      }
+
       .btn {
-        padding: 0.625rem 1.25rem;
-        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
         font-size: 0.875rem;
         font-weight: 500;
+        text-decoration: none;
         cursor: pointer;
-        border: none;
         transition: all 0.2s;
       }
+
+      .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
       .btn-primary {
-        background: #18181b;
+        background: #2563eb;
         color: white;
       }
+
       .btn-primary:hover:not(:disabled) {
-        background: #27272a;
+        background: #1d4ed8;
       }
-      .btn-primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
+
       .btn-secondary {
-        background: white;
-        color: #18181b;
-        border: 1px solid #e4e4e7;
+        background: #6b7280;
+        color: white;
       }
+
       .btn-secondary:hover:not(:disabled) {
-        background: #f4f4f5;
+        background: #4b5563;
       }
-      .btn-secondary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
+
       .btn-outline {
         background: transparent;
-        color: #18181b;
-        border: 1px solid #e4e4e7;
+        color: #6b7280;
+        border: 1px solid #d4d4d8;
       }
-      .btn-outline:hover {
-        background: #f4f4f5;
+
+      .btn-outline:hover:not(:disabled) {
+        background: #f9fafb;
+        border-color: #9ca3af;
       }
+
       .btn-block {
         width: 100%;
+        justify-content: center;
+      }
+
+      .btn-sm {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
       }
     `,
   ],
 })
-export class RevisionHistoryComponent implements OnInit {
-  private gridApi!: GridApi;
-  rowData: RevisionHistory[] = [];
-  loading = false;
-  searchText = '';
-
+export class RevisionHistoryComponent implements OnInit, OnDestroy {
+  // Grid configuration
+  gridApi!: GridApi;
   columnDefs: ColDef[] = [
     {
-      field: 'issueId',
-      headerName: 'Issue ID',
-      flex: 1,
-      filter: 'agTextColumnFilter',
+      headerName: 'Changed At',
+      field: 'changedAt',
       sortable: true,
+      filter: 'agDateColumnFilter',
+      valueFormatter: (params) => {
+        return new Date(params.value).toLocaleString();
+      },
+      width: 180,
     },
     {
+      headerName: 'Record ID',
+      field: 'recordId',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      width: 150,
+    },
+    {
+      headerName: 'Column',
+      field: 'columnName',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      width: 120,
+    },
+    {
+      headerName: 'Type',
       field: 'columnType',
-      headerName: 'Column Type',
-      flex: 1,
+      sortable: true,
       filter: 'agTextColumnFilter',
-      sortable: true,
+      width: 100,
     },
-    { field: 'oldValue', headerName: 'Old Value', flex: 1, sortable: true },
-    { field: 'newValue', headerName: 'New Value', flex: 1, sortable: true },
-    { field: 'authoredBy', headerName: 'Author', flex: 1 },
     {
-      field: 'createdDate',
-      headerName: 'Date',
-      flex: 1,
-      valueFormatter: (params) =>
-        params.value ? new Date(params.value).toLocaleString() : '',
+      headerName: 'Old Value',
+      field: 'oldValue',
       sortable: true,
+      filter: 'agTextColumnFilter',
+      width: 200,
+      cellRenderer: (params: any) => {
+        if (!params.value)
+          return '<span style="color: #9ca3af; font-style: italic;">Empty</span>';
+        return params.value.length > 50
+          ? params.value.substring(0, 50) + '...'
+          : params.value;
+      },
+    },
+    {
+      headerName: 'New Value',
+      field: 'newValue',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      width: 200,
+      cellRenderer: (params: any) => {
+        if (!params.value)
+          return '<span style="color: #9ca3af; font-style: italic;">Empty</span>';
+        return params.value.length > 50
+          ? params.value.substring(0, 50) + '...'
+          : params.value;
+      },
+    },
+    {
+      headerName: 'Changed By',
+      field: 'changedBy',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      width: 150,
+    },
+    {
+      headerName: 'Issue ID',
+      field: 'issueId',
+      sortable: true,
+      filter: 'agTextColumnFilter',
+      width: 120,
     },
   ];
 
@@ -436,90 +632,209 @@ export class RevisionHistoryComponent implements OnInit {
     sortable: true,
     filter: true,
     resizable: true,
-    minWidth: 100,
   };
 
+  // Component state
+  rowData: RevisionHistoryRecord[] = [];
+  bases: AirtableBase[] = [];
+  tables: AirtableTable[] = [];
+  selectedBaseId: string = '';
+  selectedTableId: string = '';
+  searchText: string = '';
+  loading = false;
+  refreshing = false;
+  cookiesValid = true;
+
+  // Subscriptions
+  private subscriptions: Subscription[] = [];
+
   constructor(
-    private revisionService: RevisionHistoryService,
     private authService: AuthService,
-    private router: Router,
-    private snackBar: MatSnackBar
+    private dataStateService: DataStateService,
+    private revisionHistoryService: RevisionHistoryService,
+    private projectService: ProjectService,
+    private tableService: TableService,
+    private snackBar: MatSnackBar,
+    private router: Router
   ) {}
 
-  ngOnInit() {
-    console.log('🚀 [RevisionHistory] Component initialized');
-    console.log(
-      '🔐 [RevisionHistory] Current userId:',
-      this.authService.currentUserId
-    );
-    this.loadHistory();
+  ngOnInit(): void {
+    this.checkCookieStatus();
+    this.loadBases();
+    this.loadRevisionHistory();
   }
 
-  onGridReady(params: GridReadyEvent) {
-    this.gridApi = params.api;
-    console.log('✅ [RevisionHistory] Grid ready');
+  ngOnDestroy(): void {
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
   }
 
-  loadHistory() {
-    this.loading = true;
+  onGridReady(event: GridReadyEvent): void {
+    this.gridApi = event.api;
+  }
+
+  checkCookieStatus(): void {
     const userId = this.authService.currentUserId;
+    if (!userId) return;
 
-    console.log('📡 [RevisionHistory] Loading history for userId:', userId);
-
-    if (!userId) {
-      console.error('❌ [RevisionHistory] No userId - redirecting to login');
-      this.showError('User not authenticated');
-      this.loading = false;
-      this.router.navigate(['/login']);
-      return;
-    }
-
-    // Sync all revision history first
-    this.revisionService.syncRevisionHistory({ userId }).subscribe({
+    this.revisionHistoryService.checkCookieStatus(userId).subscribe({
       next: (response) => {
-        console.log('✅ [RevisionHistory] Sync response:', response);
-        this.loading = false;
-        if (response.success) {
-          this.showSuccess('Revision history synced successfully');
-          // Since sync doesn't return data, we'd need a separate endpoint to fetch
-          // For now, show empty state
-          this.rowData = [];
-          console.log(
-            '⚠️ [RevisionHistory] No data returned from sync endpoint'
+        this.cookiesValid = response.data?.hasValidCookies || false;
+        if (!this.cookiesValid) {
+          this.showWarning(
+            'Your cookies have expired. Please login again to extract revision history.'
           );
         }
       },
-      error: (error: any) => {
-        console.error('❌ [RevisionHistory] Error syncing history:', error);
-        this.showError(
-          'Failed to sync history. Make sure cookies are set in Settings.'
-        );
-        this.loading = false;
+      error: (error) => {
+        console.warn('Failed to check cookie status:', error);
+        this.cookiesValid = false;
       },
     });
   }
 
-  onSearchChange() {
+  loadBases(): void {
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    this.projectService.getBases(userId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.bases = response.data.bases || [];
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load bases:', error);
+        this.showError('Failed to load bases');
+      },
+    });
+  }
+
+  onBaseChange(): void {
+    this.selectedTableId = '';
+    this.tables = [];
+
+    if (this.selectedBaseId) {
+      this.loadTables();
+    }
+  }
+
+  loadTables(): void {
+    const userId = this.authService.currentUserId;
+    if (!userId || !this.selectedBaseId) return;
+
+    this.tableService.getTables(userId, this.selectedBaseId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.tables = response.data.tables || [];
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load tables:', error);
+        this.showError('Failed to load tables');
+      },
+    });
+  }
+
+  onTableChange(): void {
+    this.loadRevisionHistory();
+  }
+
+  loadRevisionHistory(): void {
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    const request = {
+      userId,
+      ...(this.selectedBaseId && { baseId: this.selectedBaseId }),
+      ...(this.selectedTableId && { tableId: this.selectedTableId }),
+      limit: 1000,
+    };
+
+    this.revisionHistoryService.getRevisionHistory(request).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.rowData = response.data.revisions || [];
+          if (this.rowData.length > 0) {
+            this.showSuccess(
+              `Loaded ${this.rowData.length} revision history records`
+            );
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load revision history:', error);
+        this.showError('Failed to load revision history');
+      },
+    });
+  }
+
+  syncRevisionHistory(): void {
+    if (!this.selectedBaseId || !this.selectedTableId) {
+      this.showError('Please select both base and table');
+      return;
+    }
+
+    const userId = this.authService.currentUserId;
+    if (!userId) {
+      this.showError('User not authenticated');
+      return;
+    }
+
+    this.loading = true;
+
+    const request = {
+      userId,
+      baseId: this.selectedBaseId,
+      tableId: this.selectedTableId,
+    };
+
+    this.revisionHistoryService.syncRevisionHistory(request).subscribe({
+      next: (response) => {
+        this.loading = false;
+        if (response.success && response.data) {
+          this.showSuccess(
+            `Successfully processed ${response.data.successful} records`
+          );
+          this.loadRevisionHistory(); // Refresh the data
+        } else {
+          this.showError('Sync completed but no data was returned');
+        }
+      },
+      error: (error) => {
+        this.loading = false;
+        console.error('Failed to sync revision history:', error);
+        this.showError('Failed to sync revision history');
+      },
+    });
+  }
+
+  refreshData(): void {
+    this.refreshing = true;
+    this.loadRevisionHistory();
+    setTimeout(() => {
+      this.refreshing = false;
+    }, 1000);
+  }
+
+  onSearchChange(): void {
     if (this.gridApi) {
       this.gridApi.setGridOption('quickFilterText', this.searchText);
     }
   }
 
-  exportData() {
+  exportData(): void {
     if (this.gridApi) {
       this.gridApi.exportDataAsCsv({
-        fileName: `sync-history-${new Date().toISOString().split('T')[0]}.csv`,
+        fileName: `revision-history-${
+          new Date().toISOString().split('T')[0]
+        }.csv`,
       });
       this.showSuccess('Data exported successfully');
     }
   }
 
-  getSuccessCount(): number {
-    return this.rowData.filter((item) => item.columnType === 'Status').length;
-  }
-
-  getFailedCount(): number {
-    return this.rowData.filter((item) => item.columnType === 'Assignee').length;
+  redirectToLogin(): void {
+    this.router.navigate(['/login']);
   }
 
   logout(): void {
@@ -527,19 +842,24 @@ export class RevisionHistoryComponent implements OnInit {
     this.router.navigate(['/login']);
   }
 
-  private showSuccess(message: string) {
+  private showSuccess(message: string): void {
     this.snackBar.open(message, 'Close', {
-      duration: 3000,
-      horizontalPosition: 'end',
-      verticalPosition: 'top',
+      duration: 5000,
+      panelClass: ['success-snackbar'],
     });
   }
 
-  private showError(message: string) {
+  private showError(message: string): void {
     this.snackBar.open(message, 'Close', {
-      duration: 5000,
-      horizontalPosition: 'end',
-      verticalPosition: 'top',
+      duration: 8000,
+      panelClass: ['error-snackbar'],
+    });
+  }
+
+  private showWarning(message: string): void {
+    this.snackBar.open(message, 'Close', {
+      duration: 10000,
+      panelClass: ['warning-snackbar'],
     });
   }
 }
