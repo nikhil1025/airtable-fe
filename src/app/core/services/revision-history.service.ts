@@ -220,7 +220,9 @@ export class RevisionHistoryService {
   /**
    * Get all revision history for a user from database
    */
-  getUserRevisionHistory(userId: string): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
+  getUserRevisionHistory(
+    userId: string
+  ): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
     const url = `${environment.apiBaseUrl}/revision-history/user/${userId}`;
     console.log('📚 [RevisionHistoryService] Getting user revision history', {
       url,
