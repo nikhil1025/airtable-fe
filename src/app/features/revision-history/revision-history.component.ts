@@ -331,11 +331,130 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         display: flex;
         gap: 1rem;
         align-items: center;
+        flex-wrap: wrap;
       }
 
       .base-select,
       .table-select {
-        min-width: 200px;
+        min-width: 220px;
+        background: white;
+      }
+
+      /* Material Select Styling - Outline Appearance */
+      ::ng-deep .base-select .mat-mdc-text-field-wrapper,
+      ::ng-deep .table-select .mat-mdc-text-field-wrapper {
+        background: white !important;
+        border-radius: 8px;
+      }
+
+      ::ng-deep .base-select .mat-mdc-form-field-flex,
+      ::ng-deep .table-select .mat-mdc-form-field-flex {
+        background: white !important;
+        border-radius: 8px;
+        height: 48px;
+      }
+
+      ::ng-deep .base-select .mdc-notched-outline__leading,
+      ::ng-deep .base-select .mdc-notched-outline__notch,
+      ::ng-deep .base-select .mdc-notched-outline__trailing,
+      ::ng-deep .table-select .mdc-notched-outline__leading,
+      ::ng-deep .table-select .mdc-notched-outline__notch,
+      ::ng-deep .table-select .mdc-notched-outline__trailing {
+        border-color: #e5e7eb !important;
+        background: white !important;
+      }
+
+      ::ng-deep .base-select:hover .mdc-notched-outline__leading,
+      ::ng-deep .base-select:hover .mdc-notched-outline__notch,
+      ::ng-deep .base-select:hover .mdc-notched-outline__trailing,
+      ::ng-deep .table-select:hover .mdc-notched-outline__leading,
+      ::ng-deep .table-select:hover .mdc-notched-outline__notch,
+      ::ng-deep .table-select:hover .mdc-notched-outline__trailing {
+        border-color: #2563eb !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-form-field-focus-overlay,
+      ::ng-deep .table-select .mat-mdc-form-field-focus-overlay {
+        background-color: white !important;
+      }
+
+      ::ng-deep
+        .base-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-notched-outline__leading,
+      ::ng-deep
+        .base-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-notched-outline__notch,
+      ::ng-deep
+        .base-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-notched-outline__trailing,
+      ::ng-deep
+        .table-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-notched-outline__leading,
+      ::ng-deep
+        .table-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-notched-outline__notch,
+      ::ng-deep
+        .table-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-notched-outline__trailing {
+        border-color: #2563eb !important;
+        border-width: 2px !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-form-field-subscript-wrapper,
+      ::ng-deep .table-select .mat-mdc-form-field-subscript-wrapper {
+        display: none;
+      }
+
+      ::ng-deep .base-select .mdc-floating-label,
+      ::ng-deep .table-select .mdc-floating-label {
+        color: #6b7280 !important;
+        font-size: 14px !important;
+        background: white !important;
+        padding: 0 4px;
+      }
+
+      ::ng-deep
+        .base-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-floating-label,
+      ::ng-deep
+        .table-select
+        .mat-mdc-form-field.mat-focused
+        .mdc-floating-label {
+        color: #2563eb !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-select-value,
+      ::ng-deep .table-select .mat-mdc-select-value {
+        color: #1f2937 !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-select-value-text,
+      ::ng-deep .table-select .mat-mdc-select-value-text {
+        color: #1f2937 !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-select-arrow,
+      ::ng-deep .table-select .mat-mdc-select-arrow {
+        color: #6b7280 !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-select-placeholder,
+      ::ng-deep .table-select .mat-mdc-select-placeholder {
+        color: #9ca3af !important;
+      }
+
+      ::ng-deep .base-select .mat-mdc-select-trigger,
+      ::ng-deep .table-select .mat-mdc-select-trigger {
+        color: #1f2937 !important;
       }
 
       .content-area {

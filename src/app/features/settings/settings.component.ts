@@ -112,19 +112,6 @@ import { AuthService } from '../../core/services/auth.service';
             />
           </div>
 
-          <div class="form-group">
-            <label for="mfaCode">MFA Code (optional)</label>
-            <input
-              id="mfaCode"
-              type="text"
-              [(ngModel)]="mfaCode"
-              class="input"
-              placeholder="123456"
-              [disabled]="loading"
-            />
-            <small>If you have MFA enabled, enter the code here</small>
-          </div>
-
           <div class="button-group">
             <button
               class="btn btn-primary"
@@ -201,28 +188,6 @@ import { AuthService } from '../../core/services/auth.service';
             <span>User ID:</span>
             <code>{{ currentUserId }}</code>
           </div>
-        </div>
-
-        <div class="card info-card">
-          <h3>ℹ️ Important Information</h3>
-          <ul>
-            <li>
-              <strong>Cookies</strong> are required to access revision history
-              via web scraping
-            </li>
-            <li>
-              <strong>OAuth</strong> is used for API access to projects, tables,
-              and tickets
-            </li>
-            <li>
-              Your cookies are <strong>encrypted</strong> and stored securely in
-              MongoDB
-            </li>
-            <li>Cookies typically remain valid for <strong>30 days</strong></li>
-            <li>
-              You must manually copy cookies from your logged-in browser session
-            </li>
-          </ul>
         </div>
       </main>
     </div>
