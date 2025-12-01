@@ -904,7 +904,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
       .hierarchical-view {
         display: flex;
         gap: 1rem;
-        min-height: 600px;
+        height: 70vh;
         position: relative;
       }
 
@@ -916,11 +916,13 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        height: 100%;
       }
 
       .detail-panel {
         flex: 1;
         min-width: 400px;
+        height: 100%;
       }
 
       .panel-header {
@@ -958,7 +960,27 @@ ModuleRegistry.registerModules([AllCommunityModule]);
       .panel-list {
         flex: 1;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 0.5rem;
+        max-height: calc(70vh - 0px);
+      }
+
+      .panel-list::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .panel-list::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 3px;
+      }
+
+      .panel-list::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+      }
+
+      .panel-list::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
       }
 
       .list-item {
@@ -1057,7 +1079,27 @@ ModuleRegistry.registerModules([AllCommunityModule]);
       .detail-content {
         flex: 1;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 1rem;
+        max-height: calc(60vh - 80px);
+      }
+
+      .detail-content::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .detail-content::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+      }
+
+      .detail-content::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+
+      .detail-content::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
       }
 
       .revision-entry {
