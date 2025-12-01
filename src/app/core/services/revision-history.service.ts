@@ -84,7 +84,7 @@ export interface ApiResponse<T = any> {
   providedIn: 'root',
 })
 export class RevisionHistoryService {
-  private readonly API_URL = `${environment.apiBaseUrl}/revision-history`;
+  private readonly API_URL = `${environment.apiBaseUrl}/revision-history-fetch`;
 
   constructor(private http: HttpClient) {}
 
@@ -131,7 +131,7 @@ export class RevisionHistoryService {
   getRevisionHistory(
     request: GetRevisionHistoryRequest
   ): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
-    const url = `${this.API_URL}/${request.recordId || 'all'}`;
+    const url = `${this.API_URL}/${request.recordId || 'all/' + request.userId}`;
     const params = {
       userId: request.userId,
       ...(request.baseId && { baseId: request.baseId }),
@@ -156,7 +156,7 @@ export class RevisionHistoryService {
   checkCookieStatus(
     userId: string
   ): Observable<ApiResponse<{ hasValidCookies: boolean; lastUpdated?: Date }>> {
-    const url = `${environment.apiBaseUrl}/cookies/status`;
+    const url = `${environment.apiBaseUrl}/cookies/validate`;
     return this.http.post<
       ApiResponse<{ hasValidCookies: boolean; lastUpdated?: Date }>
     >(url, { userId });
