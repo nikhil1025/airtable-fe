@@ -230,4 +230,35 @@ export class RevisionHistoryService {
     });
     return this.http.get<ApiResponse<GetRevisionHistoryResponse['data']>>(url);
   }
+
+  /**
+   * Get filtered revision history
+   * Filter by baseId, tableId, userId with pagination
+   */
+  getFilteredRevisions(params: {
+    baseId?: string;
+    tableId?: string;
+    userId?: string;
+    limit?: number;
+    skip?: number;
+  }): Observable<ApiResponse<any>> {
+    const url = `${environment.apiBaseUrl}/revision-history/filter`;
+    console.log(' [RevisionHistoryService] Getting filtered revisions', {
+      url,
+      params,
+    });
+    return this.http.get<ApiResponse<any>>(url, { params: params as any });
+  }
+
+  /**
+   * Get revision history for a specific record
+   */
+  getRecordRevisions(recordId: string): Observable<ApiResponse<any>> {
+    const url = `${environment.apiBaseUrl}/revision-history/record/${recordId}`;
+    console.log(' [RevisionHistoryService] Getting record revisions', {
+      url,
+      recordId,
+    });
+    return this.http.get<ApiResponse<any>>(url);
+  }
 }

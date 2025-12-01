@@ -45,10 +45,10 @@ import { RealDataService } from '../../core/services/real-data.service';
             syncResult.success ? '✓ Sync Complete!' : '✗ Sync Failed'
           }}</strong>
           <p *ngIf="syncResult.success && syncResult.data">
-            Synced {{ syncResult.data.bases || 0 }} projects,
-            {{ syncResult.data.tables || 0 }} tables,
-            {{ syncResult.data.tickets || 0 }} tickets, and
-            {{ syncResult.data.users || 0 }} users
+            Synced {{ syncResult.data.synced.bases || 0 }} projects,
+            {{ syncResult.data.synced.tables || 0 }} tables,
+            {{ syncResult.data.synced.tickets || 0 }} tickets, and
+            {{ syncResult.data.synced.users || 0 }} users
           </p>
           <p *ngIf="!syncResult.success">
             {{ syncResult.error || 'An error occurred during sync' }}

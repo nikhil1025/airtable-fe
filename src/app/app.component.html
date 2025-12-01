@@ -1,4 +1,4 @@
-<app-sidebar></app-sidebar>
-<div class="main-content" [style.margin-left]="sidebarWidth">
+<app-sidebar *ngIf="showSidebar"></app-sidebar>
+<div class="main-content" [style.margin-left]="showSidebar ? sidebarWidth : '0'">
     <router-outlet></router-outlet>
 </div>

@@ -84,6 +84,11 @@ interface AutomationProgress {
   `,
   styles: [
     `
+      :host {
+        display: block;
+        min-height: 100vh;
+      }
+
       .login-container {
         min-height: 100vh;
         display: flex;

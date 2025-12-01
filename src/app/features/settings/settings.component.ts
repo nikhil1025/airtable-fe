@@ -161,7 +161,7 @@ import { AuthService } from '../../core/services/auth.service';
       }
 
       .main-content {
-        max-width: 100%;
+        width: 100%;
         margin: 0;
         display: flex;
         flex-direction: column;

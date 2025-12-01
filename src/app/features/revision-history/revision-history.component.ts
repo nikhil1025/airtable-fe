@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatTabsModule } from '@angular/material/tabs';
 import { Router, RouterModule } from '@angular/router';
 import { AgGridAngular } from 'ag-grid-angular';
 import {
@@ -44,6 +45,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     MatSnackBarModule,
     MatSelectModule,
     MatFormFieldModule,
+    MatTabsModule,
     FormsModule,
   ],
   template: `
@@ -56,7 +58,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               Track changes and modifications to your records
             </p>
           </div>
-          <div class="header-actions">
+          <div class="header-actions" *ngIf="selectedTabIndex === 0">
             <div class="select-wrapper">
               <label class="select-label">Select Base</label>
               <select
@@ -120,104 +122,361 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
         </div>
 
-        <!-- Scraping Loader Modal -->
-        <div class="loader-overlay" *ngIf="scraping">
-          <div class="loader-modal">
-            <div class="loader-spinner"></div>
-            <h2>Scraping Revision History Data</h2>
-            <p>Please wait while we fetch data from Airtable...</p>
-            <div class="loader-progress">
-              <div class="progress-bar"></div>
+        <!-- Tabs for different views -->
+        <mat-tab-group
+          [(selectedIndex)]="selectedTabIndex"
+          class="revision-tabs"
+          (selectedTabChange)="onTabChange($event)"
+        >
+          <!-- Tab 1: AG-Grid View -->
+          <mat-tab label="Grid View">
+            <!-- Scraping Loader Modal -->
+            <div class="loader-overlay" *ngIf="scraping">
+              <div class="loader-modal">
+                <div class="loader-spinner"></div>
+                <h2>Scraping Revision History Data</h2>
+                <p>Please wait while we fetch data from Airtable...</p>
+                <div class="loader-progress">
+                  <div class="progress-bar"></div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div class="content-area" *ngIf="!loading && !scraping">
-          <!-- Cookie Status Alert -->
-          <div class="alert alert-warning" *ngIf="!cookiesValid">
-            <div class="alert-content">
-              <mat-icon class="alert-icon">warning</mat-icon>
-              <div class="alert-text">
-                <strong>Authentication Required</strong>
+            <div class="content-area" *ngIf="!loading && !scraping">
+              <!-- Cookie Status Alert -->
+              <div class="alert alert-warning" *ngIf="!cookiesValid">
+                <div class="alert-content">
+                  <mat-icon class="alert-icon">warning</mat-icon>
+                  <div class="alert-text">
+                    <strong>Authentication Required</strong>
+                    <p>
+                      Your cookies have expired or are invalid. Please update
+                      your authentication credentials in Settings.
+                    </p>
+                  </div>
+                  <button
+                    class="btn btn-sm btn-primary"
+                    (click)="redirectToSettings()"
+                  >
+                    Go to Settings
+                  </button>
+                </div>
+              </div>
+
+              <!-- Data Grid -->
+              <div class="data-section">
+                <div class="section-header">
+                  <h3>Revision History Records</h3>
+                  <div class="section-actions">
+                    <input
+                      type="text"
+                      placeholder="Search revisions..."
+                      class="search-input"
+                      [(ngModel)]="searchText"
+                      (input)="onSearchChange()"
+                    />
+                    <button
+                      class="btn btn-outline btn-sm"
+                      (click)="exportData()"
+                      [disabled]="!rowData.length"
+                    >
+                      <mat-icon>download</mat-icon>
+                      Export CSV
+                    </button>
+                  </div>
+                </div>
+
+                <div class="grid-container">
+                  <ag-grid-angular
+                    class="ag-theme-alpine data-grid"
+                    [columnDefs]="columnDefs"
+                    [rowData]="rowData"
+                    [defaultColDef]="defaultColDef"
+                    [pagination]="true"
+                    [paginationPageSize]="50"
+                    [animateRows]="true"
+                    [suppressCellFocus]="true"
+                    (gridReady)="onGridReady($event)"
+                  >
+                  </ag-grid-angular>
+                </div>
+              </div>
+
+              <!-- No Data State -->
+              <div
+                class="no-data-state"
+                *ngIf="rowData.length === 0 && !loading"
+              >
+                <div class="no-data-content">
+                  <mat-icon class="no-data-icon">history</mat-icon>
+                  <h3>No Revision History Found</h3>
+                  <p>
+                    Select a base (and optionally a table), then click "Sync
+                    History" to extract revision history data.
+                  </p>
+                  <button
+                    class="btn btn-primary"
+                    (click)="syncRevisionHistory()"
+                    [disabled]="!selectedBaseId && !selectedTableId"
+                  >
+                    Filter
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading-state" *ngIf="loading">
+              <div class="spinner-large"></div>
+              <h3>Extracting Revision History...</h3>
+              <p>Please wait while we scrape revision history from Airtable.</p>
+            </div>
+          </mat-tab>
+
+          <!-- Tab 2: Hierarchical Preview View -->
+          <mat-tab label="Record Preview">
+            <div class="hierarchical-view">
+              <!-- Bases List -->
+              <div class="hierarchy-panel bases-panel">
+                <div class="panel-header">
+                  <h3>Bases</h3>
+                  <input
+                    type="text"
+                    placeholder="Search bases..."
+                    class="panel-search"
+                    [(ngModel)]="baseSearchText"
+                  />
+                </div>
+                <div class="panel-list">
+                  <div
+                    *ngFor="let base of filteredBases"
+                    class="list-item"
+                    [class.selected]="hierarchySelectedBaseId === base.id"
+                    (click)="selectHierarchyBase(base.id)"
+                  >
+                    <mat-icon>folder</mat-icon>
+                    <span>{{ base.name }}</span>
+                  </div>
+                  <div *ngIf="filteredBases.length === 0" class="empty-state">
+                    <p>No bases found</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tables List -->
+              <div
+                class="hierarchy-panel tables-panel"
+                *ngIf="hierarchySelectedBaseId"
+              >
+                <div class="panel-header">
+                  <h3>Tables</h3>
+                  <input
+                    type="text"
+                    placeholder="Search tables..."
+                    class="panel-search"
+                    [(ngModel)]="tableSearchText"
+                  />
+                </div>
+                <div class="panel-list">
+                  <div
+                    *ngFor="let table of filteredTables"
+                    class="list-item"
+                    [class.selected]="hierarchySelectedTableId === table.id"
+                    (click)="selectHierarchyTable(table.id)"
+                  >
+                    <mat-icon>table_chart</mat-icon>
+                    <span>{{ table.name }}</span>
+                  </div>
+                  <div *ngIf="filteredTables.length === 0" class="empty-state">
+                    <p>No tables found</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Records List -->
+              <div
+                class="hierarchy-panel records-panel"
+                *ngIf="hierarchySelectedTableId"
+              >
+                <div class="panel-header">
+                  <h3>Records</h3>
+                  <input
+                    type="text"
+                    placeholder="Search records..."
+                    class="panel-search"
+                    [(ngModel)]="recordSearchText"
+                  />
+                </div>
+                <div class="panel-list">
+                  <div
+                    *ngFor="let record of filteredRecords"
+                    class="list-item"
+                    [class.selected]="
+                      hierarchySelectedRecordId === record.issueId
+                    "
+                    (click)="selectHierarchyRecord(record.issueId)"
+                  >
+                    <mat-icon>confirmation_number</mat-icon>
+                    <div class="record-info">
+                      <span class="record-id">{{ record.issueId }}</span>
+                      <span class="record-meta"
+                        >{{
+                          getRecordChangeCount(record.issueId)
+                        }}
+                        changes</span
+                      >
+                    </div>
+                  </div>
+                  <div *ngIf="loadingRecords" class="loading-indicator">
+                    <div class="spinner"></div>
+                    <p>Loading records...</p>
+                  </div>
+                  <div
+                    *ngIf="!loadingRecords && filteredRecords.length === 0"
+                    class="empty-state"
+                  >
+                    <p>No records found</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Record Detail Preview -->
+              <div
+                class="hierarchy-panel detail-panel"
+                *ngIf="hierarchySelectedRecordId"
+              >
+                <div class="panel-header">
+                  <h3>Revision History</h3>
+                  <button
+                    class="btn btn-sm btn-outline"
+                    (click)="refreshRecordDetail()"
+                  >
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                </div>
+                <div
+                  class="detail-content"
+                  *ngIf="selectedRecordRevisions.length > 0"
+                >
+                  <div
+                    class="revision-entry"
+                    *ngFor="
+                      let revision of selectedRecordRevisions;
+                      let i = index
+                    "
+                  >
+                    <div class="revision-header">
+                      <div class="revision-user">
+                        <div class="user-avatar">
+                          {{ getUserInitials(revision.authoredBy) }}
+                        </div>
+                        <div class="user-info">
+                          <span class="user-name">{{
+                            revision.authoredBy
+                          }}</span>
+                          <span class="revision-time">{{
+                            formatRevisionTime(revision.createdDate)
+                          }}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="revision-details">
+                      <div class="detail-section">
+                        <span class="detail-label">BATCH NAME</span>
+                        <span class="detail-value">Batch {{ i + 1 }}</span>
+                      </div>
+
+                      <div class="detail-section">
+                        <span class="detail-label">DATE IMPORTED</span>
+                        <span class="detail-value timestamp">{{
+                          formatDate(revision.createdDate)
+                        }}</span>
+                      </div>
+
+                      <div class="detail-section">
+                        <span class="detail-label">IMPORTED BY</span>
+                        <span class="detail-value">{{
+                          revision.authoredBy
+                        }}</span>
+                      </div>
+
+                      <div class="detail-section">
+                        <span class="detail-label"
+                          >NUMBER OF RECORDS IMPORTED</span
+                        >
+                        <span class="detail-value">1</span>
+                      </div>
+
+                      <div class="detail-section">
+                        <span class="detail-label">SOURCE SYSTEM</span>
+                        <span class="detail-value">System Import</span>
+                      </div>
+
+                      <div class="detail-section">
+                        <span class="detail-label">NOTES</span>
+                        <span class="detail-value notes"
+                          >Field update: {{ revision.columnType }}</span
+                        >
+                      </div>
+
+                      <div class="detail-section">
+                        <span class="detail-label">RELATED TABLE</span>
+                        <span class="detail-value related-link">{{
+                          getTableNameById(hierarchySelectedTableId)
+                        }}</span>
+                      </div>
+                    </div>
+
+                    <div class="field-changes">
+                      <div class="change-item">
+                        <div class="change-header">
+                          <span class="field-name">{{
+                            revision.columnType
+                          }}</span>
+                        </div>
+                        <div class="change-values">
+                          <div class="old-value" *ngIf="revision.oldValue">
+                            <span class="strikethrough">{{
+                              revision.oldValue
+                            }}</span>
+                          </div>
+                          <div class="new-value" *ngIf="revision.newValue">
+                            <span class="highlight-green">{{
+                              revision.newValue
+                            }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div *ngIf="loadingRecordDetail" class="loading-indicator">
+                  <div class="spinner"></div>
+                  <p>Loading revision details...</p>
+                </div>
+                <div
+                  *ngIf="
+                    !loadingRecordDetail && selectedRecordRevisions.length === 0
+                  "
+                  class="empty-state"
+                >
+                  <mat-icon>history</mat-icon>
+                  <p>No revision history found for this record</p>
+                </div>
+              </div>
+
+              <!-- Empty state when no base selected -->
+              <div class="hierarchy-empty" *ngIf="!hierarchySelectedBaseId">
+                <mat-icon>folder_open</mat-icon>
+                <h3>Select a Base</h3>
                 <p>
-                  Your cookies have expired or are invalid. Please update your
-                  authentication credentials in Settings.
+                  Choose a base from the list to view its tables and records
                 </p>
               </div>
-              <button
-                class="btn btn-sm btn-primary"
-                (click)="redirectToSettings()"
-              >
-                Go to Settings
-              </button>
             </div>
-          </div>
-
-          <!-- Data Grid -->
-          <div class="data-section">
-            <div class="section-header">
-              <h3>Revision History Records</h3>
-              <div class="section-actions">
-                <input
-                  type="text"
-                  placeholder="Search revisions..."
-                  class="search-input"
-                  [(ngModel)]="searchText"
-                  (input)="onSearchChange()"
-                />
-                <button
-                  class="btn btn-outline btn-sm"
-                  (click)="exportData()"
-                  [disabled]="!rowData.length"
-                >
-                  <mat-icon>download</mat-icon>
-                  Export CSV
-                </button>
-              </div>
-            </div>
-
-            <div class="grid-container">
-              <ag-grid-angular
-                class="ag-theme-alpine data-grid"
-                [columnDefs]="columnDefs"
-                [rowData]="rowData"
-                [defaultColDef]="defaultColDef"
-                [pagination]="true"
-                [paginationPageSize]="50"
-                [animateRows]="true"
-                [suppressCellFocus]="true"
-                (gridReady)="onGridReady($event)"
-              >
-              </ag-grid-angular>
-            </div>
-          </div>
-
-          <!-- No Data State -->
-          <div class="no-data-state" *ngIf="rowData.length === 0 && !loading">
-            <div class="no-data-content">
-              <mat-icon class="no-data-icon">history</mat-icon>
-              <h3>No Revision History Found</h3>
-              <p>
-                Select a base (and optionally a table), then click "Sync
-                History" to extract revision history data.
-              </p>
-              <button
-                class="btn btn-primary"
-                (click)="syncRevisionHistory()"
-                [disabled]="!selectedBaseId && !selectedTableId"
-              >
-                Filter
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Loading State -->
-        <div class="loading-state" *ngIf="loading">
-          <div class="spinner-large"></div>
-          <h3>Extracting Revision History...</h3>
-          <p>Please wait while we scrape revision history from Airtable.</p>
-        </div>
+          </mat-tab>
+        </mat-tab-group>
       </main>
     </div>
   `,
@@ -269,7 +528,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         height: 60%;
         align-items: center;
       }
-      .btn-group>button {
+      .btn-group > button {
         height: 100%;
       }
       .select-wrapper {
@@ -616,6 +875,361 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           background-position: -200% 0;
         }
       }
+
+      /* Tabs Styling */
+      .revision-tabs {
+        margin-top: 1.5rem;
+      }
+
+      ::ng-deep .revision-tabs .mat-mdc-tab-labels {
+        background: white;
+        border-radius: 12px 12px 0 0;
+        border: 1px solid #e4e4e7;
+        border-bottom: none;
+      }
+
+      ::ng-deep .revision-tabs .mat-mdc-tab {
+        min-width: 120px;
+        font-weight: 500;
+      }
+
+      ::ng-deep .revision-tabs .mat-mdc-tab-body-wrapper {
+        border: 1px solid #e4e4e7;
+        border-radius: 0 0 12px 12px;
+        background: white;
+        padding: 1.5rem;
+      }
+
+      /* Hierarchical View */
+      .hierarchical-view {
+        display: flex;
+        gap: 1rem;
+        min-height: 600px;
+        position: relative;
+      }
+
+      .hierarchy-panel {
+        flex: 0 0 280px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .detail-panel {
+        flex: 1;
+        min-width: 400px;
+      }
+
+      .panel-header {
+        padding: 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        background: #f9fafb;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .panel-header h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .panel-search {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        margin-top: 0.75rem;
+        outline: none;
+        transition: all 0.2s;
+      }
+
+      .panel-search:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+
+      .panel-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.5rem;
+      }
+
+      .list-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        margin-bottom: 0.25rem;
+      }
+
+      .list-item:hover {
+        background: #f3f4f6;
+      }
+
+      .list-item.selected {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .list-item mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: #6b7280;
+      }
+
+      .list-item.selected mat-icon {
+        color: #2563eb;
+      }
+
+      .list-item span {
+        font-size: 0.875rem;
+        font-weight: 500;
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .record-info {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        gap: 0.25rem;
+      }
+
+      .record-id {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .record-meta {
+        font-size: 0.75rem;
+        color: #6b7280;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #9ca3af;
+      }
+
+      .empty-state mat-icon {
+        font-size: 3rem;
+        width: 3rem;
+        height: 3rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.5;
+      }
+
+      .empty-state p {
+        font-size: 0.875rem;
+        margin: 0;
+      }
+
+      .loading-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        gap: 1rem;
+      }
+
+      .loading-indicator p {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin: 0;
+      }
+
+      /* Detail Content */
+      .detail-content {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+      }
+
+      .revision-entry {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .revision-header {
+        margin-bottom: 1rem;
+      }
+
+      .revision-user {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #2563eb;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.875rem;
+        font-weight: 600;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .user-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .revision-time {
+        font-size: 0.75rem;
+        color: #6b7280;
+      }
+
+      .revision-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      .detail-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+      }
+
+      .detail-label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .detail-value {
+        font-size: 0.875rem;
+        color: #111827;
+      }
+
+      .detail-value.timestamp {
+        color: #059669;
+        font-weight: 500;
+      }
+
+      .detail-value.notes {
+        color: #d97706;
+      }
+
+      .detail-value.related-link {
+        color: #2563eb;
+        cursor: pointer;
+      }
+
+      .detail-value.related-link:hover {
+        text-decoration: underline;
+      }
+
+      .field-changes {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      .change-item {
+        margin-bottom: 1rem;
+      }
+
+      .change-header {
+        margin-bottom: 0.5rem;
+      }
+
+      .field-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+      }
+
+      .change-values {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      .old-value,
+      .new-value {
+        padding: 0.5rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+      }
+
+      .old-value {
+        background: #fef2f2;
+      }
+
+      .new-value {
+        background: #f0fdf4;
+      }
+
+      .strikethrough {
+        text-decoration: line-through;
+        color: #dc2626;
+      }
+
+      .highlight-green {
+        color: #059669;
+        font-weight: 500;
+      }
+
+      .hierarchy-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        color: #9ca3af;
+      }
+
+      .hierarchy-empty mat-icon {
+        font-size: 4rem;
+        width: 4rem;
+        height: 4rem;
+        opacity: 0.5;
+      }
+
+      .hierarchy-empty h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: #6b7280;
+      }
+
+      .hierarchy-empty p {
+        margin: 0;
+        font-size: 0.875rem;
+      }
     `,
   ],
 })
@@ -713,6 +1327,25 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   refreshing = false;
   scraping = false;
   cookiesValid = true;
+
+  // Tab state
+  selectedTabIndex = 0;
+
+  // Hierarchical view state
+  hierarchySelectedBaseId: string = '';
+  hierarchySelectedTableId: string = '';
+  hierarchySelectedRecordId: string = '';
+
+  baseSearchText: string = '';
+  tableSearchText: string = '';
+  recordSearchText: string = '';
+
+  hierarchyTables: AirtableTable[] = [];
+  hierarchyRecords: RevisionHistoryRecord[] = [];
+  selectedRecordRevisions: RevisionHistoryRecord[] = [];
+
+  loadingRecords = false;
+  loadingRecordDetail = false;
 
   // Subscriptions
   private subscriptions: Subscription[] = [];
@@ -1022,6 +1655,191 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
   redirectToSettings(): void {
     this.router.navigate(['/settings']);
+  }
+
+  // Hierarchical view methods
+  get filteredBases(): AirtableBase[] {
+    if (!this.baseSearchText) return this.bases;
+    const search = this.baseSearchText.toLowerCase();
+    return this.bases.filter((base) =>
+      base.name.toLowerCase().includes(search)
+    );
+  }
+
+  get filteredTables(): AirtableTable[] {
+    if (!this.tableSearchText) return this.hierarchyTables;
+    const search = this.tableSearchText.toLowerCase();
+    return this.hierarchyTables.filter((table) =>
+      table.name.toLowerCase().includes(search)
+    );
+  }
+
+  get filteredRecords(): RevisionHistoryRecord[] {
+    if (!this.recordSearchText) {
+      // Group by issueId to show unique records
+      const uniqueRecords = new Map<string, RevisionHistoryRecord>();
+      this.hierarchyRecords.forEach((record) => {
+        if (!uniqueRecords.has(record.issueId)) {
+          uniqueRecords.set(record.issueId, record);
+        }
+      });
+      return Array.from(uniqueRecords.values());
+    }
+    const search = this.recordSearchText.toLowerCase();
+    const uniqueRecords = new Map<string, RevisionHistoryRecord>();
+    this.hierarchyRecords.forEach((record) => {
+      if (
+        record.issueId.toLowerCase().includes(search) &&
+        !uniqueRecords.has(record.issueId)
+      ) {
+        uniqueRecords.set(record.issueId, record);
+      }
+    });
+    return Array.from(uniqueRecords.values());
+  }
+
+  onTabChange(event: any): void {
+    this.selectedTabIndex = event.index;
+    console.log('Tab changed to:', event.index);
+  }
+
+  selectHierarchyBase(baseId: string): void {
+    this.hierarchySelectedBaseId = baseId;
+    this.hierarchySelectedTableId = '';
+    this.hierarchySelectedRecordId = '';
+    this.hierarchyTables = [];
+    this.hierarchyRecords = [];
+    this.selectedRecordRevisions = [];
+
+    // Load tables for selected base
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    this.tableService.getTables(userId, baseId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.hierarchyTables = response.data.tables || [];
+        }
+      },
+      error: (error) => {
+        console.error('Failed to load tables:', error);
+        this.showError('Failed to load tables');
+      },
+    });
+  }
+
+  selectHierarchyTable(tableId: string): void {
+    this.hierarchySelectedTableId = tableId;
+    this.hierarchySelectedRecordId = '';
+    this.hierarchyRecords = [];
+    this.selectedRecordRevisions = [];
+
+    // Load records for selected table
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    this.loadingRecords = true;
+
+    this.revisionHistoryService
+      .getFilteredRevisions({
+        baseId: this.hierarchySelectedBaseId,
+        tableId: tableId,
+        userId: userId,
+        limit: 1000,
+      })
+      .subscribe({
+        next: (response) => {
+          this.loadingRecords = false;
+          if (response.success && response.data) {
+            this.hierarchyRecords = response.data.revisions || [];
+            console.log(
+              `Loaded ${this.hierarchyRecords.length} records for table`
+            );
+          }
+        },
+        error: (error) => {
+          this.loadingRecords = false;
+          console.error('Failed to load records:', error);
+          this.showError('Failed to load records');
+        },
+      });
+  }
+
+  selectHierarchyRecord(recordId: string): void {
+    this.hierarchySelectedRecordId = recordId;
+    this.loadRecordRevisions(recordId);
+  }
+
+  loadRecordRevisions(recordId: string): void {
+    this.loadingRecordDetail = true;
+
+    this.revisionHistoryService.getRecordRevisions(recordId).subscribe({
+      next: (response) => {
+        this.loadingRecordDetail = false;
+        if (response.success && response.data) {
+          this.selectedRecordRevisions = response.data.revisions || [];
+          console.log(
+            `Loaded ${this.selectedRecordRevisions.length} revisions for record ${recordId}`
+          );
+        }
+      },
+      error: (error) => {
+        this.loadingRecordDetail = false;
+        console.error('Failed to load record revisions:', error);
+        this.showError('Failed to load record revision details');
+      },
+    });
+  }
+
+  refreshRecordDetail(): void {
+    if (this.hierarchySelectedRecordId) {
+      this.loadRecordRevisions(this.hierarchySelectedRecordId);
+    }
+  }
+
+  getRecordChangeCount(recordId: string): number {
+    return this.hierarchyRecords.filter((r) => r.issueId === recordId).length;
+  }
+
+  getUserInitials(name: string): string {
+    if (!name) return 'U';
+    const parts = name.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  }
+
+  formatRevisionTime(dateString: string): string {
+    if (!dateString) return 'Unknown time';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return '1 day ago';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+    return `${Math.floor(diffDays / 365)} years ago`;
+  }
+
+  formatDate(dateString: string): string {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return (
+      date.toLocaleDateString('en-US', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }) + ' GMT'
+    );
+  }
+
+  getTableNameById(tableId: string): string {
+    const table = this.hierarchyTables.find((t) => t.id === tableId);
+    return table ? table.name : 'Unknown Table';
   }
 
   private showSuccess(message: string): void {
