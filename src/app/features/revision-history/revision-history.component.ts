@@ -129,10 +129,10 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             <button
               class="btn btn-primary"
               (click)="syncRevisionHistory()"
-              [disabled]="loading || !selectedBaseId || !selectedTableId"
+              [disabled]="loading || (!selectedBaseId && !selectedTableId)"
             >
               <span *ngIf="loading" class="spinner"></span>
-              <span *ngIf="!loading">🔄 Sync History</span>
+              <span *ngIf="!loading">Filter</span>
             </button>
 
             <button
@@ -211,15 +211,15 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               <div class="no-data-icon">📜</div>
               <h3>No Revision History Found</h3>
               <p>
-                Select a base and table, then click "Sync History" to extract
-                revision history data.
+                Select a base (and optionally a table), then click "Sync
+                History" to extract revision history data.
               </p>
               <button
                 class="btn btn-primary"
                 (click)="syncRevisionHistory()"
-                [disabled]="!selectedBaseId || !selectedTableId"
+                [disabled]="!selectedBaseId && !selectedTableId"
               >
-                🔄 Sync History
+                Filter
               </button>
             </div>
           </div>
@@ -731,7 +731,14 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     this.tables = [];
 
     if (this.selectedBaseId) {
+      console.log(
+        '📁 Base changed, loading tables for base:',
+        this.selectedBaseId
+      );
       this.loadTables();
+      this.loadRevisionHistory(); // Load revisions for the base
+    } else {
+      this.loadRevisionHistory(); // Load all revisions
     }
   }
 
@@ -753,6 +760,12 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   }
 
   onTableChange(): void {
+    if (this.selectedTableId) {
+      console.log(
+        '📋 Table changed, loading revision history for table:',
+        this.selectedTableId
+      );
+    }
     this.loadRevisionHistory();
   }
 
@@ -767,27 +780,47 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       limit: 1000,
     };
 
+    console.log('📋 Loading revision history with filters:', {
+      baseId: this.selectedBaseId || 'All',
+      tableId: this.selectedTableId || 'All',
+      limit: 1000,
+    });
+
     this.revisionHistoryService.getRevisionHistory(request).subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.rowData = response.data.revisions || [];
+
+          const filterInfo = [];
+          if (this.selectedBaseId)
+            filterInfo.push(`Base: ${this.selectedBaseId}`);
+          if (this.selectedTableId)
+            filterInfo.push(`Table: ${this.selectedTableId}`);
+          const filterText =
+            filterInfo.length > 0 ? ` (${filterInfo.join(', ')})` : '';
+
           if (this.rowData.length > 0) {
+            const ticketCount =
+              response.data.totalTickets ||
+              new Set(this.rowData.map((r) => r.issueId)).size;
             this.showSuccess(
-              `Loaded ${this.rowData.length} revision history records`
+              `Loaded ${this.rowData.length} revisions from ${ticketCount} records${filterText}`
             );
+          } else {
+            console.log('No revision history found with current filters');
           }
         }
       },
       error: (error) => {
         console.error('Failed to load revision history:', error);
-        this.showError('Failed to load revision history');
+        this.showError('Failed to load revision history from database');
       },
     });
   }
 
   syncRevisionHistory(): void {
-    if (!this.selectedBaseId || !this.selectedTableId) {
-      this.showError('Please select both base and table');
+    if (!this.selectedBaseId && !this.selectedTableId) {
+      this.showError('Please select at least a base or table');
       return;
     }
 
@@ -797,22 +830,34 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.selectedTableId) {
+      this.showWarning(
+        'No table selected. This will sync ALL tables in the selected base. This may take a while.'
+      );
+    }
+
     this.loading = true;
 
-    const request = {
+    const request: any = {
       userId,
-      baseId: this.selectedBaseId,
-      tableId: this.selectedTableId,
     };
+
+    if (this.selectedBaseId) request.baseId = this.selectedBaseId;
+    if (this.selectedTableId) request.tableId = this.selectedTableId;
+
+    console.log('🔄 Syncing revision history with request:', request);
 
     this.revisionHistoryService.syncRevisionHistory(request).subscribe({
       next: (response) => {
         this.loading = false;
         if (response.success && response.data) {
-          this.showSuccess(
-            `Successfully processed ${response.data.successful} records`
-          );
-          this.loadRevisionHistory(); // Refresh the data
+          const successMsg = `Successfully synced! Processed: ${response.data.processed}, Successful: ${response.data.successful}, Failed: ${response.data.failed}`;
+          this.showSuccess(successMsg);
+
+          // Wait a bit for data to be written to DB, then refresh
+          setTimeout(() => {
+            this.loadRevisionHistory();
+          }, 500);
         } else {
           this.showError('Sync completed but no data was returned');
         }
@@ -820,7 +865,11 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       error: (error) => {
         this.loading = false;
         console.error('Failed to sync revision history:', error);
-        this.showError('Failed to sync revision history');
+        const errorMsg =
+          error?.error?.message ||
+          error?.message ||
+          'Failed to sync revision history';
+        this.showError(errorMsg);
       },
     });
   }
