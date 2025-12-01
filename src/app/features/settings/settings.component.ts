@@ -599,9 +599,10 @@ export class SettingsComponent implements OnInit {
     const request = {
       email: this.airtableEmail.trim(),
       password: this.airtablePassword,
+      userId: userId, // Pass existing userId to avoid creating duplicate
     };
 
-    console.log('[Settings] Sending auto-retrieve request');
+    console.log('[Settings] Sending auto-retrieve request for userId:', userId);
 
     this.http
       .post<any>(`${environment.apiBaseUrl}/auth/validate`, request)
@@ -610,14 +611,17 @@ export class SettingsComponent implements OnInit {
           console.log('[Settings] Auto-retrieve response:', response);
           this.loading = false;
           if (response.success) {
-            // Update auth service with the new userId from authentication
-            if (response.data?.userId) {
-              this.authService.updateAuthState(response.data.userId, true);
-              console.log(
-                '[Settings] Updated auth service with new userId:',
-                response.data.userId
+            // Verify the userId matches
+            if (response.data?.userId && response.data.userId !== userId) {
+              console.warn(
+                '[Settings] WARNING: Response userId differs from current userId!',
+                {
+                  current: userId,
+                  response: response.data.userId,
+                }
               );
             }
+            console.log('[Settings] Cookies stored for userId:', userId);
 
             this.showSuccess(
               `Authentication successful! Cookies extracted and stored. (${

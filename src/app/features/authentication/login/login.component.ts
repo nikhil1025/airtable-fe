@@ -638,10 +638,13 @@ export class LoginComponent {
     this.error = '';
 
     try {
+      // Get or generate persistent userId
+      const userId = this.authService.getPersistentUserId();
+
       const response = await this.http
         .post<{ success: boolean; message: string; data?: any }>(
           `${this.baseUrl}/auth/validate`,
-          this.manualCredentials
+          { ...this.manualCredentials, userId }
         )
         .toPromise();
 
