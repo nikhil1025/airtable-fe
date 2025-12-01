@@ -57,64 +57,66 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             </p>
           </div>
           <div class="header-actions">
-            <mat-form-field appearance="outline" class="base-select">
-              <mat-label>Select Base</mat-label>
-              <mat-select
-                [(value)]="selectedBaseId"
-                (selectionChange)="onBaseChange()"
+            <div class="select-wrapper">
+              <label class="select-label">Select Base</label>
+              <select
+                class="custom-select"
+                [(ngModel)]="selectedBaseId"
+                (change)="onBaseChange()"
               >
-                <mat-option value="">All Bases</mat-option>
-                <mat-option *ngFor="let base of bases" [value]="base.id">
+                <option value="">All Bases</option>
+                <option *ngFor="let base of bases" [value]="base.id">
                   {{ base.name }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
+                </option>
+              </select>
+            </div>
 
-            <mat-form-field
-              appearance="outline"
-              class="table-select"
-              *ngIf="selectedBaseId"
-            >
-              <mat-label>Select Table</mat-label>
-              <mat-select
-                [(value)]="selectedTableId"
-                (selectionChange)="onTableChange()"
+            <div class="select-wrapper" *ngIf="selectedBaseId">
+              <label class="select-label">Select Table</label>
+              <select
+                class="custom-select"
+                [(ngModel)]="selectedTableId"
+                (change)="onTableChange()"
               >
-                <mat-option value="">All Tables</mat-option>
-                <mat-option *ngFor="let table of tables" [value]="table.id">
+                <option value="">All Tables</option>
+                <option *ngFor="let table of tables" [value]="table.id">
                   {{ table.name }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
+                </option>
+              </select>
+            </div>
 
-            <button
-              class="btn btn-primary"
-              (click)="syncRevisionHistory()"
-              [disabled]="loading || (!selectedBaseId && !selectedTableId)"
-            >
-              <span *ngIf="loading" class="spinner"></span>
-              <span *ngIf="!loading">Filter</span>
-            </button>
+            <div class="btn-group-container">
+              <div class="btn-group">
+                <button
+                  class="btn btn-primary"
+                  (click)="syncRevisionHistory()"
+                  [disabled]="loading || (!selectedBaseId && !selectedTableId)"
+                >
+                  <span *ngIf="loading" class="spinner"></span>
+                  <span *ngIf="!loading">Filter</span>
+                </button>
 
-            <button
-              class="btn btn-secondary"
-              (click)="refreshData()"
-              [disabled]="refreshing"
-            >
-              <span *ngIf="refreshing" class="spinner"></span>
-              <mat-icon *ngIf="!refreshing">refresh</mat-icon>
-              <span *ngIf="!refreshing">Refresh</span>
-            </button>
+                <button
+                  class="btn btn-secondary"
+                  (click)="refreshData()"
+                  [disabled]="refreshing"
+                >
+                  <span *ngIf="refreshing" class="spinner"></span>
+                  <mat-icon *ngIf="!refreshing">refresh</mat-icon>
+                  <span *ngIf="!refreshing">Refresh</span>
+                </button>
 
-            <button
-              class="btn btn-primary"
-              (click)="scrapeAndLoadRevisionHistory()"
-              [disabled]="scraping"
-            >
-              <span *ngIf="scraping" class="spinner"></span>
-              <mat-icon *ngIf="!scraping">sync</mat-icon>
-              <span *ngIf="!scraping">Sync Revision History</span>
-            </button>
+                <button
+                  class="btn btn-primary"
+                  (click)="scrapeAndLoadRevisionHistory()"
+                  [disabled]="scraping"
+                >
+                  <span *ngIf="scraping" class="spinner"></span>
+                  <mat-icon *ngIf="!scraping">sync</mat-icon>
+                  <span *ngIf="!scraping">Sync Revision History</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -232,167 +234,91 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         max-width: 100%;
         margin: 0;
         padding: 1rem 100px;
-        display: flex;
-        flex-direction: column;
         box-sizing: border-box;
       }
 
       .dashboard-header {
-        background: white;
-        padding: 1rem;
-        border-bottom: 1px solid #e4e4e7;
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        gap: 1rem;
+        margin-bottom: 1rem;
       }
-
       .dashboard-header h1 {
+        font-size: 1.875rem;
+        font-weight: 700;
         margin: 0;
-        color: #27272a;
-        font-size: 2rem;
-        font-weight: 600;
       }
-
       .subtitle {
-        margin: 0.5rem 0 0 0;
-        color: #6b7280;
-        font-size: 1rem;
+        color: #71717a;
+        margin-top: 0.25rem;
       }
-
       .header-actions {
         display: flex;
-        gap: 1rem;
+        gap: 0.75rem;
+      }
+
+      .btn-group-container {
+        display: flex;
+        // gap: 0.5rem;
+        align-items: end;
+        padding-bottom: 2px;
+      }
+      .btn-group {
+        display: flex;
+        gap: 0.5rem;
+        height: 60%;
         align-items: center;
-        flex-wrap: wrap;
       }
-
-      .base-select,
-      .table-select {
+      .btn-group>button {
+        height: 100%;
+      }
+      .select-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
         min-width: 220px;
+      }
+
+      .select-label {
+        font-size: 14px;
+        font-weight: 500;
+        color: #374151;
+      }
+
+      .custom-select {
+        padding: 12px 16px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
         background: white;
-      }
-
-      /* Material Select Styling - Outline Appearance */
-      ::ng-deep .base-select .mat-mdc-text-field-wrapper,
-      ::ng-deep .table-select .mat-mdc-text-field-wrapper {
-        background: white !important;
-        border-radius: 8px;
-      }
-
-      ::ng-deep .base-select .mat-mdc-form-field-flex,
-      ::ng-deep .table-select .mat-mdc-form-field-flex {
-        background: white !important;
-        border-radius: 8px;
+        color: #1f2937;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        outline: none;
+        min-width: 220px;
         height: 48px;
       }
 
-      ::ng-deep .base-select .mdc-notched-outline__leading,
-      ::ng-deep .base-select .mdc-notched-outline__notch,
-      ::ng-deep .base-select .mdc-notched-outline__trailing,
-      ::ng-deep .table-select .mdc-notched-outline__leading,
-      ::ng-deep .table-select .mdc-notched-outline__notch,
-      ::ng-deep .table-select .mdc-notched-outline__trailing {
-        border-color: #e5e7eb !important;
-        background: white !important;
+      .custom-select:hover {
+        border-color: #2563eb;
       }
 
-      ::ng-deep .base-select:hover .mdc-notched-outline__leading,
-      ::ng-deep .base-select:hover .mdc-notched-outline__notch,
-      ::ng-deep .base-select:hover .mdc-notched-outline__trailing,
-      ::ng-deep .table-select:hover .mdc-notched-outline__leading,
-      ::ng-deep .table-select:hover .mdc-notched-outline__notch,
-      ::ng-deep .table-select:hover .mdc-notched-outline__trailing {
-        border-color: #2563eb !important;
+      .custom-select:focus {
+        border-color: #2563eb;
+        border-width: 2px;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
       }
 
-      ::ng-deep .base-select .mat-mdc-form-field-focus-overlay,
-      ::ng-deep .table-select .mat-mdc-form-field-focus-overlay {
-        background-color: white !important;
-      }
-
-      ::ng-deep
-        .base-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-notched-outline__leading,
-      ::ng-deep
-        .base-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-notched-outline__notch,
-      ::ng-deep
-        .base-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-notched-outline__trailing,
-      ::ng-deep
-        .table-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-notched-outline__leading,
-      ::ng-deep
-        .table-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-notched-outline__notch,
-      ::ng-deep
-        .table-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-notched-outline__trailing {
-        border-color: #2563eb !important;
-        border-width: 2px !important;
-      }
-
-      ::ng-deep .base-select .mat-mdc-form-field-subscript-wrapper,
-      ::ng-deep .table-select .mat-mdc-form-field-subscript-wrapper {
-        display: none;
-      }
-
-      ::ng-deep .base-select .mdc-floating-label,
-      ::ng-deep .table-select .mdc-floating-label {
-        color: #6b7280 !important;
-        font-size: 14px !important;
-        background: white !important;
-        padding: 0 4px;
-      }
-
-      ::ng-deep
-        .base-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-floating-label,
-      ::ng-deep
-        .table-select
-        .mat-mdc-form-field.mat-focused
-        .mdc-floating-label {
-        color: #2563eb !important;
-      }
-
-      ::ng-deep .base-select .mat-mdc-select-value,
-      ::ng-deep .table-select .mat-mdc-select-value {
-        color: #1f2937 !important;
-        font-size: 14px !important;
-        font-weight: 500 !important;
-      }
-
-      ::ng-deep .base-select .mat-mdc-select-value-text,
-      ::ng-deep .table-select .mat-mdc-select-value-text {
-        color: #1f2937 !important;
-      }
-
-      ::ng-deep .base-select .mat-mdc-select-arrow,
-      ::ng-deep .table-select .mat-mdc-select-arrow {
-        color: #6b7280 !important;
-      }
-
-      ::ng-deep .base-select .mat-mdc-select-placeholder,
-      ::ng-deep .table-select .mat-mdc-select-placeholder {
-        color: #9ca3af !important;
-      }
-
-      ::ng-deep .base-select .mat-mdc-select-trigger,
-      ::ng-deep .table-select .mat-mdc-select-trigger {
-        color: #1f2937 !important;
+      .custom-select option {
+        padding: 8px;
+        color: #1f2937;
+        background: white;
       }
 
       .content-area {
         flex: 1;
-        padding: 2rem;
+        // padding: 2rem;
       }
 
       .alert {
