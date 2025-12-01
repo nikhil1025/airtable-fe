@@ -154,7 +154,8 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               <div class="alert-text">
                 <strong>Authentication Required</strong>
                 <p>
-                  Your cookies have expired or are invalid. Please update your authentication credentials in Settings.
+                  Your cookies have expired or are invalid. Please update your
+                  authentication credentials in Settings.
                 </p>
               </div>
               <button
@@ -677,24 +678,33 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success && response.data) {
           this.cookiesValid = response.data.valid;
-          
+
           if (!this.cookiesValid) {
-            const message = response.data.message || 'Your cookies have expired or are invalid.';
+            const message =
+              response.data.message ||
+              'Your cookies have expired or are invalid.';
             const fullMessage = `${message} Please update your authentication in Settings.`;
             this.showWarning(fullMessage);
           } else if (response.data.validUntil) {
             const validUntil = new Date(response.data.validUntil);
-            console.log('✅ Cookies are valid until:', validUntil.toLocaleString());
+            console.log(
+              '✅ Cookies are valid until:',
+              validUntil.toLocaleString()
+            );
           }
         } else {
           this.cookiesValid = false;
-          this.showWarning('Unable to validate cookies. Please check your authentication in Settings.');
+          this.showWarning(
+            'Unable to validate cookies. Please check your authentication in Settings.'
+          );
         }
       },
       error: (error) => {
         console.error('Failed to check cookie status:', error);
         this.cookiesValid = false;
-        this.showWarning('Failed to validate cookies. Please check your authentication in Settings.');
+        this.showWarning(
+          'Failed to validate cookies. Please check your authentication in Settings.'
+        );
       },
     });
   }

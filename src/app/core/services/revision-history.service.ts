@@ -173,7 +173,9 @@ export class RevisionHistoryService {
    */
   checkCookieStatus(
     userId: string
-  ): Observable<ApiResponse<{ valid: boolean; validUntil?: Date; message: string }>> {
+  ): Observable<
+    ApiResponse<{ valid: boolean; validUntil?: Date; message: string }>
+  > {
     const url = `${environment.apiBaseUrl}/cookies/validate`;
     return this.http.post<
       ApiResponse<{ valid: boolean; validUntil?: Date; message: string }>
