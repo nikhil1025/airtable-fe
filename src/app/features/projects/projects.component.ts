@@ -66,7 +66,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         <!-- Stats Cards -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">📁</div>
+            <mat-icon class="stat-icon">folder</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Projects</div>
               <div class="stat-value">{{ rowData.length }}</div>
@@ -74,7 +74,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">✅</div>
+            <mat-icon class="stat-icon">check_circle</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Synced Today</div>
               <div class="stat-value">{{ rowData.length }}</div>
@@ -82,7 +82,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">🕐</div>
+            <mat-icon class="stat-icon">schedule</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Last Sync</div>
               <div class="stat-value">Just now</div>
@@ -101,23 +101,6 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           />
         </div>
 
-        <!-- Debug Info (Temporary) -->
-        <div
-          class="card"
-          style="background: #f0f9ff; border: 2px solid #0ea5e9; margin-bottom: 1rem;"
-        >
-          <h3 style="margin: 0 0 0.5rem 0; color: #0c4a6e;">🔍 Debug Info</h3>
-          <div style="font-family: monospace; font-size: 0.875rem;">
-            <div><strong>Loading:</strong> {{ loading }}</div>
-            <div><strong>Row Data Length:</strong> {{ rowData.length }}</div>
-            <div><strong>Row Data:</strong> {{ rowData | json }}</div>
-            <div>
-              <strong>User ID:</strong>
-              {{ authService.currentUserId || 'NOT LOGGED IN' }}
-            </div>
-          </div>
-        </div>
-
         <!-- Loading State -->
         <div class="card loading-state" *ngIf="loading">
           <div class="loading-content">
@@ -127,12 +110,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         </div>
 
         <!-- AG Grid Table -->
-        <div class="card grid-container" *ngIf="!loading && rowData.length > 0">
-          <div
-            style="background: #fef3c7; padding: 0.5rem; margin-bottom: 0.5rem; border: 1px solid #fbbf24;"
-          >
-            <strong>Grid Debug:</strong> Rendering {{ rowData.length }} rows
-          </div>
+        <!-- <div class="card grid-container" *ngIf="!loading && rowData.length > 0"> -->
           <div class="grid-wrapper">
             <ag-grid-angular
               class="ag-theme-alpine"
@@ -149,11 +127,11 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               (gridReady)="onGridReady($event)"
             ></ag-grid-angular>
           </div>
-        </div>
+        <!-- </div> -->
 
         <!-- Empty State -->
         <div class="card empty-state" *ngIf="!loading && rowData.length === 0">
-          <div class="empty-icon">📁</div>
+          <mat-icon class="empty-icon">folder</mat-icon>
           <h3>No Projects Found</h3>
           <p>Sync your Airtable bases to get started</p>
           <button class="btn btn-primary" (click)="syncAll()">
@@ -263,7 +241,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         height: 500px;
         width: 100%;
         position: relative;
-        border: 3px solid #ef4444; /* Red border for debugging */
+        // border: 3px solid #ef4444; /* Red border for debugging */
         background: #fee; /* Light red background */
       }
       .ag-theme-alpine {
@@ -409,7 +387,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    console.log('🚀 [Projects] Component initialized');
+    console.log('[Projects] Component initialized');
     console.log(
       '🔐 [Projects] Current userId from AuthService:',
       this.authService.currentUserId
@@ -421,7 +399,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       .subscribe((projects) => {
         this.rowData = projects;
         console.log(
-          '📊 [Projects] State updated with projects:',
+          ' [Projects] State updated with projects:',
           projects.length
         );
       });
@@ -444,13 +422,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
-    console.log('✅ [Projects] Grid Ready!');
-    console.log('✅ [Projects] Grid API:', this.gridApi);
-    console.log(
-      '✅ [Projects] Row Count:',
-      this.gridApi.getDisplayedRowCount()
-    );
-    console.log('✅ [Projects] Column Defs:', this.columnDefs);
+    console.log('[Projects] Grid Ready!');
+    console.log('[Projects] Grid API:', this.gridApi);
+    console.log(' [Projects] Row Count:', this.gridApi.getDisplayedRowCount());
+    console.log('[Projects] Column Defs:', this.columnDefs);
 
     // Force refresh
     this.gridApi.refreshCells();
@@ -460,10 +435,10 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   loadProjects() {
     const userId = this.authService.currentUserId;
 
-    console.log('🔍 [Projects] Loading projects from cache...', { userId });
+    console.log('[Projects] Loading projects from cache...', { userId });
 
     if (!userId) {
-      console.error('❌ [Projects] No userId - user not authenticated');
+      console.error(' [Projects] No userId - user not authenticated');
       this.showError('User not authenticated. Please login first.');
       this.router.navigate(['/login']);
       return;
@@ -480,12 +455,12 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     // Use getBases for fast cached load
     this.projectService.getBases(userId).subscribe({
       next: (response) => {
-        console.log('✅ [Projects] API Response:', response);
+        console.log('[Projects] API Response:', response);
         this.dataStateService.setLoading('projects', false);
         if (response.success && response.data) {
           this.dataStateService.setProjects(response.data.bases || []);
           console.log(
-            '✅ [Projects] Loaded bases from cache:',
+            ' [Projects] Loaded bases from cache:',
             response.data.bases
           );
           if (response.data.bases && response.data.bases.length > 0) {
@@ -498,11 +473,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
             );
           }
         } else {
-          console.warn('⚠️ [Projects] No data in response:', response);
+          console.warn(' [Projects] No data in response:', response);
         }
       },
       error: (error) => {
-        console.error('❌ [Projects] Error loading projects:', error);
+        console.error(' [Projects] Error loading projects:', error);
         this.dataStateService.setLoading('projects', false);
         this.showError(
           'Failed to load projects: ' + (error.message || 'Unknown error')
@@ -521,7 +496,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    console.log('🔄 [Projects] Syncing all data from Airtable API...');
+    console.log('[Projects] Syncing all data from Airtable API...');
 
     this.projectService.syncAll(userId).subscribe({
       next: (response) => {

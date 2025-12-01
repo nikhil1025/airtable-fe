@@ -99,7 +99,7 @@ export class RevisionHistoryService {
     request: SyncRevisionHistoryRequest
   ): Observable<ApiResponse<SyncRevisionHistoryResponse['data']>> {
     const url = `${this.API_URL}/sync`;
-    console.log('🔄 [RevisionHistoryService] Syncing revision history', {
+    console.log(' [RevisionHistoryService] Syncing revision history', {
       url,
       request,
     });
@@ -117,7 +117,7 @@ export class RevisionHistoryService {
     request: FetchRevisionHistoryRequest
   ): Observable<ApiResponse<FetchRevisionHistoryResponse['data']>> {
     const url = `${this.API_URL}/fetch`;
-    console.log('📜 [RevisionHistoryService] Fetching revision history', {
+    console.log(' [RevisionHistoryService] Fetching revision history', {
       url,
       request,
     });
@@ -158,7 +158,7 @@ export class RevisionHistoryService {
     if (request.limit) params.limit = request.limit.toString();
     if (request.offset) params.skip = request.offset.toString();
 
-    console.log('📋 [RevisionHistoryService] Getting revision history', {
+    console.log(' [RevisionHistoryService] Getting revision history', {
       url,
       params,
     });
@@ -196,7 +196,7 @@ export class RevisionHistoryService {
       ...(baseId && { baseId }),
     };
 
-    console.log('🚀 [RevisionHistoryService] Running bulk automation', {
+    console.log(' [RevisionHistoryService] Running bulk automation', {
       url,
       payload,
     });
@@ -210,7 +210,7 @@ export class RevisionHistoryService {
    */
   scrapeRevisionHistory(userId: string): Observable<ApiResponse<any>> {
     const url = `${environment.apiBaseUrl}/revision-history/fetch/${userId}`;
-    console.log('🔍 [RevisionHistoryService] Scraping revision history', {
+    console.log(' [RevisionHistoryService] Scraping revision history', {
       url,
       userId,
     });
@@ -224,7 +224,7 @@ export class RevisionHistoryService {
     userId: string
   ): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
     const url = `${environment.apiBaseUrl}/revision-history/user/${userId}`;
-    console.log('📚 [RevisionHistoryService] Getting user revision history', {
+    console.log(' [RevisionHistoryService] Getting user revision history', {
       url,
       userId,
     });

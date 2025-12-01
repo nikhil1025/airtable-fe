@@ -102,7 +102,8 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               [disabled]="refreshing"
             >
               <span *ngIf="refreshing" class="spinner"></span>
-              <span *ngIf="!refreshing">↻ Refresh</span>
+              <mat-icon *ngIf="!refreshing">refresh</mat-icon>
+              <span *ngIf="!refreshing">Refresh</span>
             </button>
 
             <button
@@ -111,7 +112,8 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               [disabled]="scraping"
             >
               <span *ngIf="scraping" class="spinner"></span>
-              <span *ngIf="!scraping">🔄 Sync Revision History</span>
+              <mat-icon *ngIf="!scraping">sync</mat-icon>
+              <span *ngIf="!scraping">Sync Revision History</span>
             </button>
           </div>
         </div>
@@ -132,7 +134,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           <!-- Cookie Status Alert -->
           <div class="alert alert-warning" *ngIf="!cookiesValid">
             <div class="alert-content">
-              <span class="alert-icon">⚠️</span>
+              <mat-icon class="alert-icon">warning</mat-icon>
               <div class="alert-text">
                 <strong>Authentication Required</strong>
                 <p>
@@ -166,7 +168,8 @@ ModuleRegistry.registerModules([AllCommunityModule]);
                   (click)="exportData()"
                   [disabled]="!rowData.length"
                 >
-                  📊 Export CSV
+                  <mat-icon>download</mat-icon>
+                  Export CSV
                 </button>
               </div>
             </div>
@@ -190,7 +193,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           <!-- No Data State -->
           <div class="no-data-state" *ngIf="rowData.length === 0 && !loading">
             <div class="no-data-content">
-              <div class="no-data-icon">📜</div>
+              <mat-icon class="no-data-icon">history</mat-icon>
               <h3>No Revision History Found</h3>
               <p>
                 Select a base (and optionally a table), then click "Sync
@@ -830,7 +833,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
           } else if (response.data.validUntil) {
             const validUntil = new Date(response.data.validUntil);
             console.log(
-              '✅ Cookies are valid until:',
+              ' Cookies are valid until:',
               validUntil.toLocaleString()
             );
           }
@@ -874,7 +877,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
     if (this.selectedBaseId) {
       console.log(
-        '📁 Base changed, loading tables for base:',
+        ' Base changed, loading tables for base:',
         this.selectedBaseId
       );
       this.loadTables();
@@ -904,7 +907,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   onTableChange(): void {
     if (this.selectedTableId) {
       console.log(
-        '📋 Table changed, loading revision history for table:',
+        ' Table changed, loading revision history for table:',
         this.selectedTableId
       );
     }
@@ -922,7 +925,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       limit: 1000,
     };
 
-    console.log('📋 Loading revision history with filters:', {
+    console.log('Loading revision history with filters:', {
       baseId: this.selectedBaseId || 'All',
       tableId: this.selectedTableId || 'All',
       limit: 1000,
@@ -987,7 +990,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     if (this.selectedBaseId) request.baseId = this.selectedBaseId;
     if (this.selectedTableId) request.tableId = this.selectedTableId;
 
-    console.log('🔄 Syncing revision history with request:', request);
+    console.log('Syncing revision history with request:', request);
 
     this.revisionHistoryService.syncRevisionHistory(request).subscribe({
       next: (response) => {
@@ -1033,12 +1036,12 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
     this.scraping = true;
 
-    console.log('🔍 Starting revision history scraping for user:', userId);
+    console.log('Starting revision history scraping for user:', userId);
 
     // Step 1: Scrape revision history from Airtable
     this.revisionHistoryService.scrapeRevisionHistory(userId).subscribe({
       next: (response) => {
-        console.log('✅ Scraping completed:', response);
+        console.log('Scraping completed:', response);
 
         // Step 2: Load the scraped data from database
         this.revisionHistoryService.getUserRevisionHistory(userId).subscribe({
@@ -1050,7 +1053,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
               this.showSuccess(
                 `Data loaded successfully! ${this.rowData.length} revisions found.`
               );
-              console.log('📊 Loaded revisions:', this.rowData.length);
+              console.log('Loaded revisions:', this.rowData.length);
             } else {
               this.showError('Failed to load data after scraping');
             }

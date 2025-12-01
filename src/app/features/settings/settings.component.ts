@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
@@ -17,6 +18,7 @@ import { AuthService } from '../../core/services/auth.service';
     RouterModule,
     FormsModule,
     MatButtonModule,
+    MatIconModule,
     MatInputModule,
     MatSnackBarModule,
   ],
@@ -31,14 +33,14 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
         <div class="card">
-          <h3>🍪 Automatic Cookie Retrieval</h3>
+          <h3>Automatic Cookie Retrieval</h3>
           <p class="description">
             Automatically extract cookies from Airtable using your credentials.
             No manual copying required!
           </p>
 
           <div *ngIf="!currentUserId" class="warning-box">
-            <h4>⚠️ Authentication Required</h4>
+            <h4>Authentication Required</h4>
             <p>
               You must complete OAuth login before retrieving cookies. Please go
               to the Dashboard and connect to Airtable first.
@@ -76,7 +78,7 @@ import { AuthService } from '../../core/services/auth.service';
               [disabled]="loading || !airtableEmail || !airtablePassword"
             >
               <span *ngIf="loading" class="spinner-sm"></span>
-              <span *ngIf="!loading">🤖 Auto-Retrieve Cookies</span>
+              <span *ngIf="!loading">Auto-Retrieve Cookies</span>
             </button>
             <button
               class="btn btn-secondary"
@@ -91,7 +93,7 @@ import { AuthService } from '../../core/services/auth.service';
               [disabled]="loading"
               title="TEST ONLY: Display cookies in console"
             >
-              🧪 Test: Show Cookies
+              Test: Show Cookies
             </button>
           </div>
 
@@ -107,12 +109,12 @@ import { AuthService } from '../../core/services/auth.service';
               Valid until: {{ cookieStatus.validUntil | date : 'medium' }}
             </p>
             <p *ngIf="cookieStatus.cookieCount" class="cookie-count">
-              🍪 {{ cookieStatus.cookieCount }} cookies stored
+              {{ cookieStatus.cookieCount }} cookies stored
             </p>
           </div>
 
           <div *ngIf="displayedCookies.length > 0" class="cookies-display">
-            <h4>📋 Stored Cookies</h4>
+            <h4>Stored Cookies</h4>
             <div class="cookie-list">
               <div *ngFor="let cookie of displayedCookies" class="cookie-item">
                 <strong>{{ cookie.name }}:</strong>
@@ -125,13 +127,13 @@ import { AuthService } from '../../core/services/auth.service';
               class="btn btn-outline btn-sm"
               (click)="copyCookiesToClipboard()"
             >
-              📋 Copy All Cookies
+              Copy All Cookies
             </button>
           </div>
         </div>
 
         <div class="card">
-          <h3>🔗 OAuth Status</h3>
+          <h3>OAuth Status</h3>
           <p class="description">Your OAuth connection to Airtable</p>
 
           <div class="status-row">
@@ -658,7 +660,7 @@ export class SettingsComponent implements OnInit {
             .get<any>(`${environment.apiBaseUrl}/cookies/get/${userId}`)
             .subscribe({
               next: (cookieResponse) => {
-                console.group('🍪 COOKIES FOR TESTING');
+                console.group(' COOKIES FOR TESTING');
                 console.log('Raw cookies:', cookieResponse.data);
                 console.log(
                   'Cookie string:',

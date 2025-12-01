@@ -6,6 +6,26 @@
 
 /* Note: ag-charts-community doesn't require CSS imports - styles are built-in */
 
+/* Material Icons - Global Styling */
+.mat-icon {
+  font-family: "Material Icons";
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "liga";
+  vertical-align: middle;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -166,10 +186,7 @@ h6 {
   border-left: 4px solid #10b981 !important;
 }
 
-.mat-mdc-snack-bar-container.success-snackbar .mdc-snackbar__label::before {
-  content: "✅ ";
-  margin-right: 8px;
-}
+/* Success, error, and warning toasts use colored left borders instead of emojis */
 
 /* Error Toast */
 .mat-mdc-snack-bar-container.error-snackbar {
@@ -181,11 +198,6 @@ h6 {
   border-left: 4px solid #ef4444 !important;
 }
 
-.mat-mdc-snack-bar-container.error-snackbar .mdc-snackbar__label::before {
-  content: "❌ ";
-  margin-right: 8px;
-}
-
 /* Warning Toast */
 .mat-mdc-snack-bar-container.warning-snackbar {
   --mdc-snackbar-container-color: white !important;
@@ -194,11 +206,6 @@ h6 {
 .mat-mdc-snack-bar-container.warning-snackbar .mdc-snackbar__surface {
   background-color: white !important;
   border-left: 4px solid #f59e0b !important;
-}
-
-.mat-mdc-snack-bar-container.warning-snackbar .mdc-snackbar__label::before {
-  content: "⚠️ ";
-  margin-right: 8px;
 }
 
 /* Material Select Panel */

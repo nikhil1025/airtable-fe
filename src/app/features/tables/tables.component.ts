@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
@@ -31,6 +32,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     RouterModule,
     AgGridAngular,
     MatButtonModule,
+    MatIconModule,
     MatSelectModule,
     MatFormFieldModule,
     MatSnackBarModule,
@@ -75,7 +77,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         <!-- Stats Cards -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">📋</div>
+            <mat-icon class="stat-icon">table_chart</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Tables</div>
               <div class="stat-value">{{ rowData.length }}</div>
@@ -83,7 +85,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">📊</div>
+            <mat-icon class="stat-icon">bar_chart</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Selected Project</div>
               <div class="stat-value">{{ getSelectedProjectName() }}</div>
@@ -91,7 +93,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">🔢</div>
+            <mat-icon class="stat-icon">numbers</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Fields</div>
               <div class="stat-value">{{ getTotalFields() }}</div>
@@ -140,13 +142,13 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           class="card empty-state"
           *ngIf="!loading && rowData.length === 0 && selectedProjectId"
         >
-          <div class="empty-icon">📋</div>
+          <mat-icon class="empty-icon">table_chart</mat-icon>
           <h3>No Tables Found</h3>
           <p>This project doesn't have any tables yet</p>
         </div>
 
         <div class="card empty-state" *ngIf="!loading && projects.length === 0">
-          <div class="empty-icon">📁</div>
+          <mat-icon class="empty-icon">folder</mat-icon>
           <h3>No Projects Available</h3>
           <p>Please sync projects first from the Projects page</p>
           <button class="btn btn-primary" routerLink="/projects">

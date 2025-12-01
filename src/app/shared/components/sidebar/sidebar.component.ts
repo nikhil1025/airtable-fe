@@ -34,7 +34,7 @@ import { AuthService } from '../../../core/services/auth.service';
           class="nav-item"
           [title]="isCollapsed ? 'Dashboard' : ''"
         >
-          <span class="nav-icon">📊</span>
+          <mat-icon class="nav-icon">dashboard</mat-icon>
           <span class="nav-text" *ngIf="!isCollapsed">Dashboard</span>
         </a>
         <a
@@ -43,7 +43,7 @@ import { AuthService } from '../../../core/services/auth.service';
           class="nav-item"
           [title]="isCollapsed ? 'Projects' : ''"
         >
-          <span class="nav-icon">📁</span>
+          <mat-icon class="nav-icon">folder</mat-icon>
           <span class="nav-text" *ngIf="!isCollapsed">Projects</span>
         </a>
         <a
@@ -52,7 +52,7 @@ import { AuthService } from '../../../core/services/auth.service';
           class="nav-item"
           [title]="isCollapsed ? 'Tables' : ''"
         >
-          <span class="nav-icon">📋</span>
+          <mat-icon class="nav-icon">table_chart</mat-icon>
           <span class="nav-text" *ngIf="!isCollapsed">Tables</span>
         </a>
         <a
@@ -61,7 +61,7 @@ import { AuthService } from '../../../core/services/auth.service';
           class="nav-item"
           [title]="isCollapsed ? 'Tickets' : ''"
         >
-          <span class="nav-icon">🎫</span>
+          <mat-icon class="nav-icon">confirmation_number</mat-icon>
           <span class="nav-text" *ngIf="!isCollapsed">Tickets</span>
         </a>
         <a
@@ -70,7 +70,7 @@ import { AuthService } from '../../../core/services/auth.service';
           class="nav-item"
           [title]="isCollapsed ? 'Revision History' : ''"
         >
-          <span class="nav-icon">📜</span>
+          <mat-icon class="nav-icon">history</mat-icon>
           <span class="nav-text" *ngIf="!isCollapsed">Revision History</span>
         </a>
         <a
@@ -79,7 +79,7 @@ import { AuthService } from '../../../core/services/auth.service';
           class="nav-item"
           [title]="isCollapsed ? 'Settings' : ''"
         >
-          <span class="nav-icon">⚙️</span>
+          <mat-icon class="nav-icon">settings</mat-icon>
           <span class="nav-text" *ngIf="!isCollapsed">Settings</span>
         </a>
       </div>
@@ -90,7 +90,7 @@ import { AuthService } from '../../../core/services/auth.service';
           (click)="logout()"
           [title]="isCollapsed ? 'Logout' : ''"
         >
-          <span class="nav-icon" *ngIf="isCollapsed">🚪</span>
+          <mat-icon class="nav-icon" *ngIf="isCollapsed">logout</mat-icon>
           <span *ngIf="!isCollapsed">Logout</span>
         </button>
       </div>

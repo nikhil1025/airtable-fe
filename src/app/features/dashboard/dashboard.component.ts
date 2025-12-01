@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -12,7 +13,7 @@ import { RealDataService } from '../../core/services/real-data.service';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatSnackBarModule],
+  imports: [CommonModule, RouterModule, MatSnackBarModule, MatIconModule],
   template: `
     <div class="dashboard-container">
       <main class="main-content">
@@ -29,7 +30,8 @@ import { RealDataService } from '../../core/services/real-data.service';
             [disabled]="syncing"
           >
             <span *ngIf="syncing" class="spinner"></span>
-            <span *ngIf="!syncing">🔄 Sync All Data</span>
+            <mat-icon *ngIf="!syncing">sync</mat-icon>
+            <span *ngIf="!syncing">Sync All Data</span>
           </button>
         </div>
 
@@ -55,7 +57,7 @@ import { RealDataService } from '../../core/services/real-data.service';
 
         <div class="stats-grid">
           <div class="stat-card clickable" routerLink="/projects">
-            <div class="stat-icon projects">📁</div>
+            <mat-icon class="stat-icon projects">folder</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Projects</div>
               <div class="stat-value">{{ stats.projects }}</div>
@@ -64,7 +66,7 @@ import { RealDataService } from '../../core/services/real-data.service';
           </div>
 
           <div class="stat-card clickable" routerLink="/tables">
-            <div class="stat-icon tables">📋</div>
+            <mat-icon class="stat-icon tables">table_chart</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Tables</div>
               <div class="stat-value">{{ stats.tables }}</div>
@@ -73,7 +75,7 @@ import { RealDataService } from '../../core/services/real-data.service';
           </div>
 
           <div class="stat-card clickable" routerLink="/tickets">
-            <div class="stat-icon tickets">🎫</div>
+            <mat-icon class="stat-icon tickets">confirmation_number</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Tickets</div>
               <div class="stat-value">{{ stats.tickets }}</div>
@@ -82,7 +84,7 @@ import { RealDataService } from '../../core/services/real-data.service';
           </div>
 
           <div class="stat-card clickable" routerLink="/revision-history">
-            <div class="stat-icon history">📜</div>
+            <mat-icon class="stat-icon history">history</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Revisions</div>
               <div class="stat-value">{{ stats.revisions }}</div>
@@ -96,28 +98,28 @@ import { RealDataService } from '../../core/services/real-data.service';
           <p class="description">Get started with these common tasks</p>
           <div class="actions-grid">
             <button class="action-btn" routerLink="/projects">
-              <span class="action-icon">📁</span>
+              <mat-icon class="action-icon">folder</mat-icon>
               <div class="action-content">
                 <strong>View Projects</strong>
                 <small>Browse your Airtable bases</small>
               </div>
             </button>
             <button class="action-btn" routerLink="/tickets">
-              <span class="action-icon">🎫</span>
+              <mat-icon class="action-icon">confirmation_number</mat-icon>
               <div class="action-content">
                 <strong>View Tickets</strong>
                 <small>Access table records</small>
               </div>
             </button>
             <button class="action-btn" routerLink="/revision-history">
-              <span class="action-icon">📜</span>
+              <mat-icon class="action-icon">history</mat-icon>
               <div class="action-content">
                 <strong>Revision History</strong>
                 <small>Track data changes</small>
               </div>
             </button>
             <button class="action-btn" routerLink="/settings">
-              <span class="action-icon">⚙️</span>
+              <mat-icon class="action-icon">settings</mat-icon>
               <div class="action-content">
                 <strong>Settings</strong>
                 <small>Configure credentials</small>
@@ -412,10 +414,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success && response.data) {
           this.dataStateService.updateStats(response.data.stats);
-          console.log(
-            '✅ Loaded real stats from database:',
-            response.data.stats
-          );
+          console.log(' Loaded real stats from database:', response.data.stats);
         }
       },
       error: (error) => {
@@ -426,7 +425,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             if (response.success && response.data) {
               this.dataStateService.updateStats(response.data.stats);
               console.log(
-                '📊 Loaded demo stats as fallback:',
+                ' Loaded demo stats as fallback:',
                 response.data.stats
               );
             }
@@ -446,7 +445,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (response.success && response.data) {
           this.dataStateService.setProjects(response.data.bases || []);
           console.log(
-            '✅ Loaded real projects from database:',
+            ' Loaded real projects from database:',
             response.data.bases?.length || 0
           );
         }
@@ -463,7 +462,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
             if (response.success && response.data) {
               this.dataStateService.setProjects(response.data.bases || []);
               console.log(
-                '📁 Loaded demo projects as fallback:',
+                ' Loaded demo projects as fallback:',
                 response.data.bases?.length || 0
               );
             }
@@ -532,7 +531,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (response.success && response.data) {
             this.dataStateService.updateStats(response.data.stats);
             console.log(
-              '✅ Refreshed real stats after sync:',
+              ' Refreshed real stats after sync:',
               response.data.stats
             );
           }
@@ -550,7 +549,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
           if (response.success && response.data) {
             this.dataStateService.setProjects(response.data.bases || []);
             console.log(
-              '✅ Refreshed real projects after sync:',
+              ' Refreshed real projects after sync:',
               response.data.bases?.length || 0
             );
           }

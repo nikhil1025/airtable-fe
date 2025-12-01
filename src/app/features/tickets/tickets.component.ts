@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
@@ -33,6 +34,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     RouterModule,
     AgGridAngular,
     MatButtonModule,
+    MatIconModule,
     MatSelectModule,
     MatFormFieldModule,
     MatSnackBarModule,
@@ -96,7 +98,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         <!-- Stats Cards -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-icon">🎫</div>
+            <mat-icon class="stat-icon">confirmation_number</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Records</div>
               <div class="stat-value">{{ rowData.length }}</div>
@@ -104,7 +106,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">📊</div>
+            <mat-icon class="stat-icon">bar_chart</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Selected Table</div>
               <div class="stat-value">{{ getSelectedTableName() }}</div>
@@ -112,7 +114,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
 
           <div class="stat-card">
-            <div class="stat-icon">📁</div>
+            <mat-icon class="stat-icon">folder</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Selected Project</div>
               <div class="stat-value">{{ getSelectedProjectName() }}</div>
@@ -162,13 +164,13 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           class="card empty-state"
           *ngIf="!loading && rowData.length === 0 && selectedTableId"
         >
-          <div class="empty-icon">🎫</div>
+          <mat-icon class="empty-icon">confirmation_number</mat-icon>
           <h3>No Records Found</h3>
           <p>This table doesn't have any records yet</p>
         </div>
 
         <div class="card empty-state" *ngIf="!loading && !selectedProjectId">
-          <div class="empty-icon">📁</div>
+          <mat-icon class="empty-icon">folder</mat-icon>
           <h3>Select a Project and Table</h3>
           <p>
             Choose a project and table from the dropdowns above to view records
@@ -488,7 +490,7 @@ export class TicketsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    console.log('🚀 [Tickets] Component initialized');
+    console.log('[Tickets] Component initialized');
     console.log('🔐 [Tickets] Current userId:', this.authService.currentUserId);
     // Initialize with default columns
     this.columnDefs = [...this.defaultColumnDefs];
@@ -497,7 +499,7 @@ export class TicketsComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
-    console.log('✅ [Tickets] Grid ready');
+    console.log('[Tickets] Grid ready');
   }
 
   loadProjects() {
@@ -505,7 +507,7 @@ export class TicketsComponent implements OnInit {
     console.log('📡 [Tickets] Loading projects from cache for userId:', userId);
 
     if (!userId) {
-      console.error('❌ [Tickets] No userId - redirecting to login');
+      console.error(' [Tickets] No userId - redirecting to login');
       this.router.navigate(['/login']);
       return;
     }
@@ -513,14 +515,14 @@ export class TicketsComponent implements OnInit {
     // Load from cache
     this.projectService.getBases(userId).subscribe({
       next: (response) => {
-        console.log('✅ [Tickets] Projects loaded from cache:', response);
+        console.log('[Tickets] Projects loaded from cache:', response);
         if (response.success && response.data) {
           this.projects = response.data.bases;
-          console.log('✅ [Tickets] Available projects:', this.projects);
+          console.log('[Tickets] Available projects:', this.projects);
         }
       },
       error: (error: any) => {
-        console.error('❌ [Tickets] Error loading projects:', error);
+        console.error(' [Tickets] Error loading projects:', error);
         this.showError('Failed to load projects');
         console.error(error);
       },

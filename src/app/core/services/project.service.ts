@@ -41,7 +41,7 @@ export class ProjectService {
     const url = `${this.API_URL}/all`;
     const payload = { userId };
 
-    console.log('🚀 [ProjectService] Calling syncAll API', {
+    console.log(' [ProjectService] Calling syncAll API', {
       url,
       payload,
       fullUrl: `${environment.apiBaseUrl}/sync/all`,

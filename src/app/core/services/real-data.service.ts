@@ -167,7 +167,7 @@ export class RealDataService {
             tokens.airtable_refresh_token;
 
           if (accessToken && refreshToken) {
-            console.log(`✅ Found OAuth tokens in localStorage[${source}]`, {
+            console.log(` Found OAuth tokens in localStorage[${source}]`, {
               accessToken: accessToken.substring(0, 20) + '...',
               refreshToken: refreshToken.substring(0, 20) + '...',
             });
@@ -184,7 +184,7 @@ export class RealDataService {
 
     // Debug: Show what's actually in localStorage
     console.warn(
-      '❌ No OAuth tokens found in localStorage. Available keys:',
+      ' No OAuth tokens found in localStorage. Available keys:',
       Object.keys(localStorage)
     );
 

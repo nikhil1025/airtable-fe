@@ -197,7 +197,7 @@ export class OauthCallbackComponent implements OnInit {
 
             localStorage.setItem('airtable_tokens', JSON.stringify(tokens));
 
-            console.log('✅ OAuth tokens stored in localStorage:', {
+            console.log(' OAuth tokens stored in localStorage:', {
               accessToken: tokens.accessToken.substring(0, 20) + '...',
               refreshToken: tokens.refreshToken.substring(0, 20) + '...',
             });
@@ -212,13 +212,13 @@ export class OauthCallbackComponent implements OnInit {
               this.router.navigate(['/dashboard']);
             }, 1500);
           } else {
-            console.warn('⚠️ No OAuth tokens found in response');
+            console.warn(' No OAuth tokens found in response');
             this.loading = false;
             this.error = 'OAuth tokens not found. Please try logging in again.';
           }
         },
         error: (error) => {
-          console.error('❌ Failed to fetch OAuth tokens:', error);
+          console.error(' Failed to fetch OAuth tokens:', error);
           this.loading = false;
           this.error =
             'Failed to retrieve authentication tokens. Please try again.';
