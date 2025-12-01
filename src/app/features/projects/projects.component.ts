@@ -45,14 +45,14 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             <p class="subtitle">Manage your Airtable bases and sync data</p>
           </div>
           <div class="header-actions">
-            <button
+            <!-- <button
               class="btn btn-primary"
               (click)="syncAll()"
               [disabled]="loading"
             >
               <span *ngIf="loading" class="spinner"></span>
               <span *ngIf="!loading">Sync All</span>
-            </button>
+            </button> -->
             <button
               class="btn btn-secondary"
               (click)="exportData()"
@@ -111,22 +111,22 @@ ModuleRegistry.registerModules([AllCommunityModule]);
 
         <!-- AG Grid Table -->
         <!-- <div class="card grid-container" *ngIf="!loading && rowData.length > 0"> -->
-          <div class="grid-wrapper">
-            <ag-grid-angular
-              class="ag-theme-alpine"
-              style="height: 100%; width: 100%;"
-              [theme]="'legacy'"
-              [rowData]="rowData"
-              [columnDefs]="columnDefs"
-              [defaultColDef]="defaultColDef"
-              [pagination]="true"
-              [paginationPageSize]="20"
-              [paginationPageSizeSelector]="[10, 20, 50, 100]"
-              [animateRows]="true"
-              [domLayout]="'normal'"
-              (gridReady)="onGridReady($event)"
-            ></ag-grid-angular>
-          </div>
+        <div class="grid-wrapper">
+          <ag-grid-angular
+            class="ag-theme-alpine"
+            style="height: 100%; width: 100%;"
+            [theme]="'legacy'"
+            [rowData]="rowData"
+            [columnDefs]="columnDefs"
+            [defaultColDef]="defaultColDef"
+            [pagination]="true"
+            [paginationPageSize]="20"
+            [paginationPageSizeSelector]="[10, 20, 50, 100]"
+            [animateRows]="true"
+            [domLayout]="'normal'"
+            (gridReady)="onGridReady($event)"
+          ></ag-grid-angular>
+        </div>
         <!-- </div> -->
 
         <!-- Empty State -->
@@ -389,7 +389,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ngOnInit() {
     console.log('[Projects] Component initialized');
     console.log(
-      '🔐 [Projects] Current userId from AuthService:',
+      '[Projects] Current userId from AuthService:',
       this.authService.currentUserId
     );
 
@@ -448,7 +448,7 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
     this.dataStateService.setLoading('projects', true);
     console.log(
-      '📡 [Projects] Calling getBases API (cached) with userId:',
+      '[Projects] Calling getBases API (cached) with userId:',
       userId
     );
 

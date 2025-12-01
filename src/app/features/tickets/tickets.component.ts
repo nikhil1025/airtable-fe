@@ -491,7 +491,7 @@ export class TicketsComponent implements OnInit {
 
   ngOnInit() {
     console.log('[Tickets] Component initialized');
-    console.log('🔐 [Tickets] Current userId:', this.authService.currentUserId);
+    console.log('[Tickets] Current userId:', this.authService.currentUserId);
     // Initialize with default columns
     this.columnDefs = [...this.defaultColumnDefs];
     this.loadProjects();
@@ -504,7 +504,7 @@ export class TicketsComponent implements OnInit {
 
   loadProjects() {
     const userId = this.authService.currentUserId;
-    console.log('📡 [Tickets] Loading projects from cache for userId:', userId);
+    console.log('[Tickets] Loading projects from cache for userId:', userId);
 
     if (!userId) {
       console.error(' [Tickets] No userId - redirecting to login');

@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
 import { environment } from '../../../../environments/environment';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-oauth-callback',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule],
   template: `
     <div class="callback-container">
       <div class="callback-card">
@@ -19,13 +20,17 @@ import { AuthService } from '../../../core/services/auth.service';
         </div>
 
         <div *ngIf="!loading && success" class="success-state">
-          <div class="success-icon">✓</div>
+          <div class="success-icon">
+            <mat-icon>check_circle</mat-icon>
+          </div>
           <h2>Authentication Successful!</h2>
           <p class="text-zinc-500">Redirecting to dashboard...</p>
         </div>
 
         <div *ngIf="!loading && error" class="error-state">
-          <div class="error-icon">✕</div>
+          <div class="error-icon">
+            <mat-icon>error</mat-icon>
+          </div>
           <h2>Authentication Failed</h2>
           <p class="error-message">{{ error }}</p>
           <button class="btn btn-primary" (click)="redirectToLogin()">
@@ -87,17 +92,28 @@ import { AuthService } from '../../../core/services/auth.service';
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2rem;
-        font-weight: bold;
+      }
+
+      .success-icon mat-icon,
+      .error-icon mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
       }
 
       .success-icon {
         background: #dcfce7;
+      }
+
+      .success-icon mat-icon {
         color: #166534;
       }
 
       .error-icon {
         background: #fee2e2;
+      }
+
+      .error-icon mat-icon {
         color: #991b1b;
       }
 
