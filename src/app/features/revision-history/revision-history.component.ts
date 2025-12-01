@@ -349,9 +349,11 @@ ModuleRegistry.registerModules([AllCommunityModule]);
                   <h3>Revision History</h3>
                   <button
                     class="btn btn-sm btn-outline"
-                    (click)="refreshRecordDetail()"
+                    (click)="scrapeAndRefreshRecordDetail()"
+                    [disabled]="scrapingRecord"
                   >
-                    <mat-icon>refresh</mat-icon>
+                    <span *ngIf="scrapingRecord" class="spinner"></span>
+                    <mat-icon *ngIf="!scrapingRecord">sync</mat-icon>
                   </button>
                 </div>
                 <div
@@ -962,7 +964,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         overflow-y: auto;
         overflow-x: hidden;
         padding: 0.5rem;
-        max-height: calc(70vh - 0px);
+        max-height: calc(60vh - 0px);
       }
 
       .panel-list::-webkit-scrollbar {
@@ -1081,7 +1083,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         overflow-y: auto;
         overflow-x: hidden;
         padding: 1rem;
-        max-height: calc(60vh - 80px);
+        max-height: calc(60vh - 0px);
       }
 
       .detail-content::-webkit-scrollbar {
@@ -1388,6 +1390,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
   loadingRecords = false;
   loadingRecordDetail = false;
+  scrapingRecord = false;
 
   // Subscriptions
   private subscriptions: Subscription[] = [];
@@ -1837,6 +1840,51 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     if (this.hierarchySelectedRecordId) {
       this.loadRecordRevisions(this.hierarchySelectedRecordId);
     }
+  }
+
+  scrapeAndRefreshRecordDetail(): void {
+    if (!this.hierarchySelectedRecordId || !this.hierarchySelectedBaseId || !this.hierarchySelectedTableId) {
+      this.showError('Missing required information to scrape record');
+      return;
+    }
+
+    const userId = this.authService.currentUserId;
+    if (!userId) {
+      this.showError('User not authenticated');
+      return;
+    }
+
+    this.scrapingRecord = true;
+
+    const params = {
+      userId,
+      recordId: this.hierarchySelectedRecordId,
+      baseId: this.hierarchySelectedBaseId,
+      tableId: this.hierarchySelectedTableId
+    };
+
+    console.log('Scraping record revisions:', params);
+
+    this.revisionHistoryService.scrapeRecordRevisions(params).subscribe({
+      next: (response) => {
+        this.scrapingRecord = false;
+        if (response.success) {
+          this.showSuccess('Record revision history scraped successfully!');
+          // Reload the record revisions after scraping
+          setTimeout(() => {
+            this.loadRecordRevisions(this.hierarchySelectedRecordId);
+          }, 500);
+        } else {
+          this.showError(response.message || 'Failed to scrape record revisions');
+        }
+      },
+      error: (error) => {
+        this.scrapingRecord = false;
+        console.error('Failed to scrape record revisions:', error);
+        const errorMsg = error?.error?.message || error?.message || 'Failed to scrape record revisions';
+        this.showError(errorMsg);
+      }
+    });
   }
 
   getRecordChangeCount(recordId: string): number {

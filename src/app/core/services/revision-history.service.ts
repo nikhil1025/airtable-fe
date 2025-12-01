@@ -261,4 +261,21 @@ export class RevisionHistoryService {
     });
     return this.http.get<ApiResponse<any>>(url);
   }
+
+  /**
+   * Scrape revision history for a specific record
+   */
+  scrapeRecordRevisions(params: {
+    userId: string;
+    recordId: string;
+    baseId: string;
+    tableId: string;
+  }): Observable<ApiResponse<any>> {
+    const url = `${environment.apiBaseUrl}/revision-history/scrape/record`;
+    console.log(' [RevisionHistoryService] Scraping record revisions', {
+      url,
+      params,
+    });
+    return this.http.post<ApiResponse<any>>(url, params);
+  }
 }
