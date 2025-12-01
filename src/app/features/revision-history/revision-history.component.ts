@@ -104,10 +104,31 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               <span *ngIf="refreshing" class="spinner"></span>
               <span *ngIf="!refreshing">↻ Refresh</span>
             </button>
+
+            <button
+              class="btn btn-primary"
+              (click)="scrapeAndLoadRevisionHistory()"
+              [disabled]="scraping"
+            >
+              <span *ngIf="scraping" class="spinner"></span>
+              <span *ngIf="!scraping">🔄 Sync Revision History</span>
+            </button>
           </div>
         </div>
 
-        <div class="content-area" *ngIf="!loading">
+        <!-- Scraping Loader Modal -->
+        <div class="loader-overlay" *ngIf="scraping">
+          <div class="loader-modal">
+            <div class="loader-spinner"></div>
+            <h2>Scraping Revision History Data</h2>
+            <p>Please wait while we fetch data from Airtable...</p>
+            <div class="loader-progress">
+              <div class="progress-bar"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="content-area" *ngIf="!loading && !scraping">
           <!-- Cookie Status Alert -->
           <div class="alert alert-warning" *ngIf="!cookiesValid">
             <div class="alert-content">
@@ -574,6 +595,98 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         padding: 0.5rem 1rem;
         font-size: 0.8rem;
       }
+
+      /* Loader Overlay Styles */
+      .loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+      }
+
+      .loader-modal {
+        background: white;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        max-width: 500px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .loader-spinner {
+        width: 80px;
+        height: 80px;
+        border: 6px solid #e5e7eb;
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 2rem;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loader-modal h2 {
+        margin: 0 0 1rem 0;
+        color: #18181b;
+        font-size: 1.5rem;
+      }
+
+      .loader-modal p {
+        margin: 0 0 2rem 0;
+        color: #6b7280;
+      }
+
+      .loader-progress {
+        width: 100%;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .progress-bar {
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          #2563eb 0%,
+          #3b82f6 50%,
+          #2563eb 100%
+        );
+        background-size: 200% 100%;
+        animation: progress 1.5s ease-in-out infinite;
+      }
+
+      @keyframes progress {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
     `,
   ],
 })
@@ -669,6 +782,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   searchText: string = '';
   loading = false;
   refreshing = false;
+  scraping = false;
   cookiesValid = true;
 
   // Subscriptions
@@ -908,6 +1022,56 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.refreshing = false;
     }, 1000);
+  }
+
+  scrapeAndLoadRevisionHistory(): void {
+    const userId = this.authService.currentUserId;
+    if (!userId) {
+      this.showError('User not authenticated');
+      return;
+    }
+
+    this.scraping = true;
+
+    console.log('🔍 Starting revision history scraping for user:', userId);
+
+    // Step 1: Scrape revision history from Airtable
+    this.revisionHistoryService.scrapeRevisionHistory(userId).subscribe({
+      next: (response) => {
+        console.log('✅ Scraping completed:', response);
+
+        // Step 2: Load the scraped data from database
+        this.revisionHistoryService.getUserRevisionHistory(userId).subscribe({
+          next: (loadResponse) => {
+            this.scraping = false;
+
+            if (loadResponse.success && loadResponse.data) {
+              this.rowData = loadResponse.data.revisions || [];
+              this.showSuccess(
+                `Data loaded successfully! ${this.rowData.length} revisions found.`
+              );
+              console.log('📊 Loaded revisions:', this.rowData.length);
+            } else {
+              this.showError('Failed to load data after scraping');
+            }
+          },
+          error: (loadError) => {
+            this.scraping = false;
+            console.error('Failed to load revision history:', loadError);
+            this.showError('Failed to load data after scraping');
+          },
+        });
+      },
+      error: (error) => {
+        this.scraping = false;
+        console.error('Failed to scrape revision history:', error);
+        const errorMsg =
+          error?.error?.message ||
+          error?.message ||
+          'Failed to scrape revision history';
+        this.showError(errorMsg);
+      },
+    });
   }
 
   onSearchChange(): void {

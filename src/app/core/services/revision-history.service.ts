@@ -203,4 +203,29 @@ export class RevisionHistoryService {
 
     return this.http.post<ApiResponse<any>>(url, payload);
   }
+
+  /**
+   * Scrape and fetch revision history from Airtable
+   * This will scrape data and store it in the database
+   */
+  scrapeRevisionHistory(userId: string): Observable<ApiResponse<any>> {
+    const url = `${environment.apiBaseUrl}/revision-history/fetch/${userId}`;
+    console.log('🔍 [RevisionHistoryService] Scraping revision history', {
+      url,
+      userId,
+    });
+    return this.http.get<ApiResponse<any>>(url);
+  }
+
+  /**
+   * Get all revision history for a user from database
+   */
+  getUserRevisionHistory(userId: string): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
+    const url = `${environment.apiBaseUrl}/revision-history/user/${userId}`;
+    console.log('📚 [RevisionHistoryService] Getting user revision history', {
+      url,
+      userId,
+    });
+    return this.http.get<ApiResponse<GetRevisionHistoryResponse['data']>>(url);
+  }
 }
