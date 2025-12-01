@@ -4,3 +4,4 @@ export * from './project.model';
 // export * from './revision-history.model';
 export * from './table.model';
 export * from './ticket.model';
+export * from './user.model';

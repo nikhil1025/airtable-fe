@@ -30,6 +30,11 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'users',
+    loadComponent: () =>
+      import('./features/users/users.component').then((m) => m.UsersComponent),
+  },
+  {
     path: 'revision-history',
     loadComponent: () =>
       import('./features/revision-history/revision-history.component').then(

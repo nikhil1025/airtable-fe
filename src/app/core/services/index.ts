@@ -4,3 +4,4 @@ export * from './project.service';
 export * from './revision-history.service';
 export * from './table.service';
 export * from './ticket.service';
+export * from './user.service';

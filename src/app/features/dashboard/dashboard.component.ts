@@ -47,8 +47,7 @@ import { RealDataService } from '../../core/services/real-data.service';
           <p *ngIf="syncResult.success && syncResult.data">
             Synced {{ syncResult.data.synced.bases || 0 }} projects,
             {{ syncResult.data.synced.tables || 0 }} tables,
-            {{ syncResult.data.synced.tickets || 0 }} tickets, and
-            {{ syncResult.data.synced.users || 0 }} users
+            {{ syncResult.data.synced.tickets || 0 }} tickets
           </p>
           <p *ngIf="!syncResult.success">
             {{ syncResult.error || 'An error occurred during sync' }}
@@ -83,6 +82,15 @@ import { RealDataService } from '../../core/services/real-data.service';
             </div>
           </div>
 
+          <!-- <div class="stat-card clickable" routerLink="/users">
+            <mat-icon class="stat-icon users">people</mat-icon>
+            <div class="stat-content">
+              <div class="stat-label">Users</div>
+              <div class="stat-value">{{ stats.users }}</div>
+              <div class="stat-hint">Click to view →</div>
+            </div>
+          </div> -->
+
           <div class="stat-card clickable" routerLink="/revision-history">
             <mat-icon class="stat-icon history">history</mat-icon>
             <div class="stat-content">
@@ -111,6 +119,13 @@ import { RealDataService } from '../../core/services/real-data.service';
                 <small>Access table records</small>
               </div>
             </button>
+            <!-- <button class="action-btn" routerLink="/users">
+              <mat-icon class="action-icon">people</mat-icon>
+              <div class="action-content">
+                <strong>Workspace Users</strong>
+                <small>View collaborators</small>
+              </div>
+            </button> -->
             <button class="action-btn" routerLink="/revision-history">
               <mat-icon class="action-icon">history</mat-icon>
               <div class="action-content">
@@ -223,6 +238,9 @@ import { RealDataService } from '../../core/services/real-data.service';
       }
       .stat-icon.tickets {
         background: linear-gradient(135deg, #e9d5ff 0%, #d8b4fe 100%);
+      }
+      .stat-icon.users {
+        background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
       }
       .stat-icon.history {
         background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
@@ -371,6 +389,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
     projects: 0,
     tables: 0,
     tickets: 0,
+    users: 0,
     revisions: 0,
   };
   private subscriptions: Subscription[] = [];
@@ -497,7 +516,8 @@ export class DashboardComponent implements OnInit, OnDestroy {
             projects: response.data.synced.bases || 0,
             tables: response.data.synced.tables || 0,
             tickets: response.data.synced.tickets || 0,
-            revisions: response.data.synced.users || 0,
+            users: response.data.synced.users || 0,
+            revisions: 0, // Revisions are fetched separately
           };
           this.dataStateService.updateStats(syncStats);
           this.dataStateService.setSyncTime(new Date());

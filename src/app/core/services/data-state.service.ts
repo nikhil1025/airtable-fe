@@ -2,21 +2,25 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { AirtableBase } from '../models/project.model';
 import { AirtableTable } from '../models/table.model';
+import { WorkspaceUser } from '../models/user.model';
 
 export interface AppState {
   projects: AirtableBase[];
   tables: Record<string, AirtableTable[]>; // Key: projectId, Value: tables
   tickets: Record<string, any[]>; // Key: tableId, Value: tickets
+  users: WorkspaceUser[]; // Workspace users
   stats: {
     projects: number;
     tables: number;
     tickets: number;
     revisions: number;
+    users: number;
   };
   loading: {
     projects: boolean;
     tables: boolean;
     tickets: boolean;
+    users: boolean;
   };
   lastSyncTime: Date | null;
 }
@@ -29,16 +33,19 @@ export class DataStateService {
     projects: [],
     tables: {},
     tickets: {},
+    users: [],
     stats: {
       projects: 0,
       tables: 0,
       tickets: 0,
       revisions: 0,
+      users: 0,
     },
     loading: {
       projects: false,
       tables: false,
       tickets: false,
+      users: false,
     },
     lastSyncTime: null,
   };
@@ -121,7 +128,10 @@ export class DataStateService {
   }
 
   // Loading states
-  setLoading(type: 'projects' | 'tables' | 'tickets', loading: boolean): void {
+  setLoading(
+    type: 'projects' | 'tables' | 'tickets' | 'users',
+    loading: boolean
+  ): void {
     const currentState = this.currentState;
     const newState = {
       ...currentState,
@@ -162,11 +172,37 @@ export class DataStateService {
     // No localStorage to clear - using APIs only
   }
 
+  // Users
+  setUsers(users: WorkspaceUser[]): void {
+    const currentState = this.currentState;
+    const newState = {
+      ...currentState,
+      users,
+      stats: {
+        ...currentState.stats,
+        users: users.length,
+      },
+    };
+    this.updateState(newState);
+  }
+
+  getUsers(): WorkspaceUser[] {
+    return this.currentState.users;
+  }
+
   // Observables for specific data
   getProjectsObservable(): Observable<AirtableBase[]> {
     return new Observable((observer) => {
       this.state$.subscribe((state) => {
         observer.next(state.projects);
+      });
+    });
+  }
+
+  getUsersObservable(): Observable<WorkspaceUser[]> {
+    return new Observable((observer) => {
+      this.state$.subscribe((state) => {
+        observer.next(state.users);
       });
     });
   }
