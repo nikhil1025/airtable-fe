@@ -154,15 +154,14 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               <div class="alert-text">
                 <strong>Authentication Required</strong>
                 <p>
-                  Your cookies have expired. Please login again to extract
-                  revision history.
+                  Your cookies have expired or are invalid. Please update your authentication credentials in Settings.
                 </p>
               </div>
               <button
                 class="btn btn-sm btn-primary"
-                (click)="redirectToLogin()"
+                (click)="redirectToSettings()"
               >
-                Login
+                Go to Settings
               </button>
             </div>
           </div>
@@ -554,44 +553,38 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   gridApi!: GridApi;
   columnDefs: ColDef[] = [
     {
-      headerName: 'Changed At',
-      field: 'changedAt',
+      headerName: 'UUID',
+      field: 'uuid',
       sortable: true,
-      filter: 'agDateColumnFilter',
-      valueFormatter: (params) => {
-        return new Date(params.value).toLocaleString();
-      },
+      filter: 'agTextColumnFilter',
       width: 180,
+      cellRenderer: (params: any) => {
+        if (!params.value) return '-';
+        return params.value.substring(0, 12) + '...';
+      },
     },
     {
       headerName: 'Record ID',
-      field: 'recordId',
+      field: 'issueId',
       sortable: true,
       filter: 'agTextColumnFilter',
-      width: 150,
+      width: 160,
     },
     {
-      headerName: 'Column',
-      field: 'columnName',
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      width: 120,
-    },
-    {
-      headerName: 'Type',
+      headerName: 'Column Type',
       field: 'columnType',
       sortable: true,
       filter: 'agTextColumnFilter',
-      width: 100,
+      width: 150,
     },
     {
       headerName: 'Old Value',
       field: 'oldValue',
       sortable: true,
       filter: 'agTextColumnFilter',
-      width: 200,
+      width: 220,
       cellRenderer: (params: any) => {
-        if (!params.value)
+        if (!params.value || params.value === '')
           return '<span style="color: #9ca3af; font-style: italic;">Empty</span>';
         return params.value.length > 50
           ? params.value.substring(0, 50) + '...'
@@ -603,9 +596,9 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       field: 'newValue',
       sortable: true,
       filter: 'agTextColumnFilter',
-      width: 200,
+      width: 220,
       cellRenderer: (params: any) => {
-        if (!params.value)
+        if (!params.value || params.value === '')
           return '<span style="color: #9ca3af; font-style: italic;">Empty</span>';
         return params.value.length > 50
           ? params.value.substring(0, 50) + '...'
@@ -613,18 +606,22 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       },
     },
     {
+      headerName: 'Changed At',
+      field: 'createdDate',
+      sortable: true,
+      filter: 'agDateColumnFilter',
+      valueFormatter: (params) => {
+        if (!params.value) return '-';
+        return new Date(params.value).toLocaleString();
+      },
+      width: 180,
+    },
+    {
       headerName: 'Changed By',
-      field: 'changedBy',
+      field: 'authoredBy',
       sortable: true,
       filter: 'agTextColumnFilter',
       width: 150,
-    },
-    {
-      headerName: 'Issue ID',
-      field: 'issueId',
-      sortable: true,
-      filter: 'agTextColumnFilter',
-      width: 120,
     },
   ];
 
@@ -678,16 +675,26 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
     this.revisionHistoryService.checkCookieStatus(userId).subscribe({
       next: (response) => {
-        this.cookiesValid = response.data?.hasValidCookies || false;
-        if (!this.cookiesValid) {
-          this.showWarning(
-            'Your cookies have expired. Please login again to extract revision history.'
-          );
+        if (response.success && response.data) {
+          this.cookiesValid = response.data.valid;
+          
+          if (!this.cookiesValid) {
+            const message = response.data.message || 'Your cookies have expired or are invalid.';
+            const fullMessage = `${message} Please update your authentication in Settings.`;
+            this.showWarning(fullMessage);
+          } else if (response.data.validUntil) {
+            const validUntil = new Date(response.data.validUntil);
+            console.log('✅ Cookies are valid until:', validUntil.toLocaleString());
+          }
+        } else {
+          this.cookiesValid = false;
+          this.showWarning('Unable to validate cookies. Please check your authentication in Settings.');
         }
       },
       error: (error) => {
-        console.warn('Failed to check cookie status:', error);
+        console.error('Failed to check cookie status:', error);
         this.cookiesValid = false;
+        this.showWarning('Failed to validate cookies. Please check your authentication in Settings.');
       },
     });
   }
@@ -833,8 +840,8 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     }
   }
 
-  redirectToLogin(): void {
-    this.router.navigate(['/login']);
+  redirectToSettings(): void {
+    this.router.navigate(['/settings']);
   }
 
   logout(): void {

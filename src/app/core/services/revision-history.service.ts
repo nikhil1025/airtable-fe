@@ -4,18 +4,16 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
 export interface RevisionHistoryRecord {
-  id: string;
-  recordId: string;
-  userId: string;
-  baseId: string;
-  tableId: string;
-  columnName: string;
+  uuid: string;
+  issueId: string;
   columnType: string;
   oldValue: string;
   newValue: string;
-  changedBy: string;
-  changedAt: Date;
-  issueId: string;
+  createdDate: string;
+  authoredBy: string;
+  userId?: string;
+  baseId?: string;
+  tableId?: string;
 }
 
 export interface SyncRevisionHistoryRequest {
@@ -65,11 +63,16 @@ export interface GetRevisionHistoryRequest {
 
 export interface GetRevisionHistoryResponse {
   success: boolean;
-  message: string;
+  message?: string;
   data: {
     revisions: RevisionHistoryRecord[];
-    total: number;
-    hasMore: boolean;
+    totalRevisions: number;
+    totalTickets?: number;
+    filters?: {
+      baseId: string | null;
+      tableId: string | null;
+      userId: string | null;
+    };
   };
 }
 
@@ -131,14 +134,29 @@ export class RevisionHistoryService {
   getRevisionHistory(
     request: GetRevisionHistoryRequest
   ): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
-    const url = `${this.API_URL}/${request.recordId || 'all/' + request.userId}`;
-    const params = {
-      userId: request.userId,
-      ...(request.baseId && { baseId: request.baseId }),
-      ...(request.tableId && { tableId: request.tableId }),
-      ...(request.limit && { limit: request.limit.toString() }),
-      ...(request.offset && { offset: request.offset.toString() }),
-    };
+    // Use the filter endpoint for baseId/tableId filtering
+    const baseUrl = `${environment.apiBaseUrl}/revision-history`;
+
+    let url: string;
+    let params: any = {};
+
+    if (request.recordId) {
+      // Get specific record
+      url = `${baseUrl}/record/${request.recordId}`;
+      if (request.userId) params.userId = request.userId;
+    } else if (request.baseId || request.tableId) {
+      // Use filter endpoint for baseId/tableId
+      url = `${baseUrl}/filter`;
+      if (request.baseId) params.baseId = request.baseId;
+      if (request.tableId) params.tableId = request.tableId;
+      if (request.userId) params.userId = request.userId;
+    } else {
+      // Get all for user
+      url = `${baseUrl}/all/${request.userId}`;
+    }
+
+    if (request.limit) params.limit = request.limit.toString();
+    if (request.offset) params.skip = request.offset.toString();
 
     console.log('📋 [RevisionHistoryService] Getting revision history', {
       url,
@@ -155,10 +173,10 @@ export class RevisionHistoryService {
    */
   checkCookieStatus(
     userId: string
-  ): Observable<ApiResponse<{ hasValidCookies: boolean; lastUpdated?: Date }>> {
+  ): Observable<ApiResponse<{ valid: boolean; validUntil?: Date; message: string }>> {
     const url = `${environment.apiBaseUrl}/cookies/validate`;
     return this.http.post<
-      ApiResponse<{ hasValidCookies: boolean; lastUpdated?: Date }>
+      ApiResponse<{ valid: boolean; validUntil?: Date; message: string }>
     >(url, { userId });
   }
 
