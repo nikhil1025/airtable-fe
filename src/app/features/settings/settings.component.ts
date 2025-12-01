@@ -21,50 +21,7 @@ import { AuthService } from '../../core/services/auth.service';
     MatSnackBarModule,
   ],
   template: `
-    <div class="dashboard-layout">
-      <nav class="sidebar">
-        <div class="sidebar-header">
-          <h2>Airtable Integration</h2>
-        </div>
-
-        <div class="nav-menu">
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span>Dashboard</span>
-          </a>
-          <a routerLink="/projects" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📁</span>
-            <span>Projects</span>
-          </a>
-          <a routerLink="/tables" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📋</span>
-            <span>Tables</span>
-          </a>
-          <a routerLink="/tickets" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🎫</span>
-            <span>Tickets</span>
-          </a>
-          <a
-            routerLink="/revision-history"
-            routerLinkActive="active"
-            class="nav-item"
-          >
-            <span class="nav-icon">📜</span>
-            <span>Revision History</span>
-          </a>
-          <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">⚙️</span>
-            <span>Settings</span>
-          </a>
-        </div>
-
-        <div class="sidebar-footer">
-          <button class="btn btn-outline btn-block" (click)="logout()">
-            Logout
-          </button>
-        </div>
-      </nav>
-
+    <div class="settings-container">
       <main class="main-content">
         <div class="dashboard-header">
           <div>
@@ -194,64 +151,25 @@ import { AuthService } from '../../core/services/auth.service';
   `,
   styles: [
     `
-      .dashboard-layout {
-        display: flex;
+      .settings-container {
         min-height: 100vh;
+        background: #fafafa;
+        width: 100%;
+        overflow-x: hidden;
       }
-      .sidebar {
-        width: 260px;
-        background: white;
-        border-right: 1px solid #e4e4e7;
+
+      .main-content {
+        max-width: 100%;
+        margin: 0;
         display: flex;
         flex-direction: column;
-      }
-      .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #e4e4e7;
-      }
-      .sidebar-header h2 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin: 0;
-      }
-      .nav-menu {
-        flex: 1;
-        padding: 1rem;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        margin-bottom: 0.25rem;
-        border-radius: 8px;
-        text-decoration: none;
-        color: #71717a;
-        transition: all 0.2s;
-      }
-      .nav-item:hover {
-        background: #f4f4f5;
-        color: #18181b;
-      }
-      .nav-item.active {
-        background: #3b82f6;
-        color: white;
-      }
-      .nav-icon {
-        font-size: 1.25rem;
-      }
-      .sidebar-footer {
-        padding: 1rem;
-        border-top: 1px solid #e4e4e7;
-      }
-      .main-content {
-        flex: 1;
-        background: #fafafa;
-        padding: 2rem;
+        padding: 1rem 100px;
         overflow-y: auto;
+        box-sizing: border-box;
       }
+
       .dashboard-header {
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
       }
       .dashboard-header h1 {
         font-size: 2rem;
@@ -772,11 +690,6 @@ export class SettingsComponent implements OnInit {
 
   private formatCookiesForBrowser(cookies: any[]): string {
     return cookies.map((c) => `${c.name}=${c.value}`).join('; ');
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
   }
 
   private showSuccess(message: string): void {

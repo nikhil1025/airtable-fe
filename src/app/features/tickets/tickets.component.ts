@@ -39,46 +39,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
     FormsModule,
   ],
   template: `
-    <div class="dashboard-layout">
-      <nav class="sidebar">
-        <div class="sidebar-header">
-          <h2>Airtable Integration</h2>
-        </div>
-
-        <div class="nav-menu">
-          <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📊</span>
-            <span>Dashboard</span>
-          </a>
-          <a routerLink="/projects" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📁</span>
-            <span>Projects</span>
-          </a>
-          <a routerLink="/tables" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📋</span>
-            <span>Tables</span>
-          </a>
-          <a routerLink="/tickets" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🎫</span>
-            <span>Tickets</span>
-          </a>
-          <a
-            routerLink="/revision-history"
-            routerLinkActive="active"
-            class="nav-item"
-          >
-            <span class="nav-icon">📜</span>
-            <span>Revision History</span>
-          </a>
-        </div>
-
-        <div class="sidebar-footer">
-          <button class="btn btn-outline btn-block" (click)="logout()">
-            Logout
-          </button>
-        </div>
-      </nav>
-
+    <div class="tickets-container">
       <main class="main-content">
         <div class="dashboard-header">
           <div>
@@ -218,66 +179,25 @@ ModuleRegistry.registerModules([AllCommunityModule]);
   `,
   styles: [
     `
-      .dashboard-layout {
-        display: flex;
+      .tickets-container {
         min-height: 100vh;
-      }
-      .sidebar {
-        width: 260px;
-        background: white;
-        border-right: 1px solid #e4e4e7;
-        display: flex;
-        flex-direction: column;
-      }
-      .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #e4e4e7;
-      }
-      .sidebar-header h2 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin: 0;
-      }
-      .nav-menu {
-        flex: 1;
-        padding: 1rem;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        border-radius: 6px;
-        color: #52525b;
-        text-decoration: none;
-        margin-bottom: 0.25rem;
-        transition: all 0.2s;
-      }
-      .nav-item:hover {
-        background: #f4f4f5;
-        color: #18181b;
-      }
-      .nav-item.active {
-        background: #18181b;
-        color: white;
-      }
-      .nav-icon {
-        font-size: 1.25rem;
-      }
-      .sidebar-footer {
-        padding: 1rem;
-        border-top: 1px solid #e4e4e7;
-      }
-      .main-content {
-        flex: 1;
-        padding: 2rem;
         background: #fafafa;
+        width: 100%;
+        overflow-x: hidden;
       }
+
+      .main-content {
+        max-width: 100%;
+        margin: 0;
+        padding: 1rem 100px;
+        box-sizing: border-box;
+      }
+
       .dashboard-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
       }
       .dashboard-header h1 {
         font-size: 1.875rem;
@@ -880,11 +800,6 @@ export class TicketsComponent implements OnInit {
   getSelectedProjectName(): string {
     const project = this.projects.find((p) => p.id === this.selectedProjectId);
     return project?.name || '-';
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
   }
 
   private showSuccess(message: string) {

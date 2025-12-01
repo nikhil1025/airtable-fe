@@ -1,0 +1,12 @@
+.main-content {
+  transition: margin-left 0.3s ease;
+  min-height: 100vh;
+  width: calc(100% - var(--sidebar-width, 260px));
+  box-sizing: border-box;
+  overflow-x: hidden;
+
+  @media (max-width: 768px) {
+    margin-left: 72px !important;
+    width: calc(100% - 72px);
+  }
+}

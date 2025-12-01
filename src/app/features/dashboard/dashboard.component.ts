@@ -14,55 +14,7 @@ import { RealDataService } from '../../core/services/real-data.service';
   standalone: true,
   imports: [CommonModule, RouterModule, MatSnackBarModule],
   template: `
-    <div class="dashboard-layout">
-      <nav class="sidebar">
-        <div class="sidebar-header">
-          <h2>Airtable Integration</h2>
-        </div>
-
-        <div class="nav-menu">
-          <a
-            routerLink="/dashboard"
-            routerLinkActive="active"
-            [routerLinkActiveOptions]="{ exact: true }"
-            class="nav-item"
-          >
-            <span class="nav-icon">📊</span>
-            <span>Dashboard</span>
-          </a>
-          <a routerLink="/projects" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📁</span>
-            <span>Projects</span>
-          </a>
-          <a routerLink="/tables" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">📋</span>
-            <span>Tables</span>
-          </a>
-          <a routerLink="/tickets" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">🎫</span>
-            <span>Tickets</span>
-          </a>
-          <a
-            routerLink="/revision-history"
-            routerLinkActive="active"
-            class="nav-item"
-          >
-            <span class="nav-icon">📜</span>
-            <span>Revision History</span>
-          </a>
-          <a routerLink="/settings" routerLinkActive="active" class="nav-item">
-            <span class="nav-icon">⚙️</span>
-            <span>Settings</span>
-          </a>
-        </div>
-
-        <div class="sidebar-footer">
-          <button class="btn btn-outline btn-block" (click)="logout()">
-            Logout
-          </button>
-        </div>
-      </nav>
-
+    <div class="dashboard-container">
       <main class="main-content">
         <div class="dashboard-header">
           <div>
@@ -173,88 +125,30 @@ import { RealDataService } from '../../core/services/real-data.service';
             </button>
           </div>
         </div>
-
-        <div class="card info-card">
-          <h3>ℹ️ Getting Started</h3>
-          <ol>
-            <li>
-              Click <strong>Sync All Data</strong> to fetch your Airtable
-              projects, tables, and tickets
-            </li>
-            <li>
-              Go to <strong>Settings</strong> to configure cookies for revision
-              history access
-            </li>
-            <li>
-              Navigate to any section using the sidebar or quick actions above
-            </li>
-          </ol>
-        </div>
       </main>
     </div>
   `,
   styles: [
     `
-      .dashboard-layout {
-        display: flex;
+      .dashboard-container {
         min-height: 100vh;
-      }
-      .sidebar {
-        width: 260px;
-        background: white;
-        border-right: 1px solid #e4e4e7;
-        display: flex;
-        flex-direction: column;
-      }
-      .sidebar-header {
-        padding: 1.5rem;
-        border-bottom: 1px solid #e4e4e7;
-      }
-      .sidebar-header h2 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin: 0;
-      }
-      .nav-menu {
-        flex: 1;
-        padding: 1rem;
-      }
-      .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem 1rem;
-        border-radius: 6px;
-        color: #52525b;
-        text-decoration: none;
-        margin-bottom: 0.25rem;
-        transition: all 0.2s;
-      }
-      .nav-item:hover {
-        background: #f4f4f5;
-        color: #18181b;
-      }
-      .nav-item.active {
-        background: #18181b;
-        color: white;
-      }
-      .nav-icon {
-        font-size: 1.25rem;
-      }
-      .sidebar-footer {
-        padding: 1rem;
-        border-top: 1px solid #e4e4e7;
-      }
-      .main-content {
-        flex: 1;
-        padding: 2rem;
         background: #fafafa;
+        width: 100%;
+        overflow-x: hidden;
       }
+
+      .main-content {
+        max-width: 100%;
+        margin: 0;
+        padding: 1rem 100px;
+        box-sizing: border-box;
+      }
+
       .dashboard-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 2rem;
+        margin-bottom: 1rem;
       }
       .dashboard-header h1 {
         font-size: 1.875rem;
@@ -266,8 +160,8 @@ import { RealDataService } from '../../core/services/real-data.service';
         margin-top: 0.25rem;
       }
       .sync-result {
-        margin-bottom: 2rem;
-        padding: 1rem 1.5rem;
+        margin-bottom: 1rem;
+        padding: 0.75rem 1rem;
         border-radius: 8px;
       }
       .sync-result.success {
@@ -290,16 +184,16 @@ import { RealDataService } from '../../core/services/real-data.service';
       .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
       }
       .stat-card {
         background: white;
         border: 1px solid #e4e4e7;
         border-radius: 8px;
-        padding: 1.5rem;
+        padding: 1rem;
         display: flex;
-        gap: 1rem;
+        gap: 0.75rem;
         transition: all 0.2s;
       }
       .stat-card.clickable {
@@ -353,8 +247,8 @@ import { RealDataService } from '../../core/services/real-data.service';
         background: white;
         border: 1px solid #e4e4e7;
         border-radius: 8px;
-        padding: 2rem;
-        margin-bottom: 2rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
       }
       .card h3 {
         margin: 0 0 0.5rem 0;
@@ -362,24 +256,24 @@ import { RealDataService } from '../../core/services/real-data.service';
       }
       .description {
         color: #71717a;
-        margin-bottom: 1.5rem;
+        margin-bottom: 0.75rem;
       }
       .quick-actions h3 {
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
       }
       .actions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem;
+        gap: 0.75rem;
       }
       .action-btn {
         background: white;
         border: 1px solid #e4e4e7;
         border-radius: 8px;
-        padding: 1.25rem;
+        padding: 1rem;
         display: flex;
         align-items: center;
-        gap: 1rem;
+        gap: 0.75rem;
         cursor: pointer;
         transition: all 0.2s;
         text-align: left;
@@ -667,11 +561,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         },
       });
     }, 1000); // Wait 1 second for database to process
-  }
-
-  logout(): void {
-    this.authService.logout();
-    this.router.navigate(['/login']);
   }
 
   private showSuccess(message: string) {
