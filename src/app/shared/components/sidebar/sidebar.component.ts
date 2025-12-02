@@ -65,6 +65,15 @@ import { AuthService } from '../../../core/services/auth.service';
           <span class="nav-text" *ngIf="!isCollapsed">Tickets</span>
         </a>
         <a
+          routerLink="/users"
+          routerLinkActive="active"
+          class="nav-item"
+          [title]="isCollapsed ? 'Users' : ''"
+        >
+          <mat-icon class="nav-icon">people</mat-icon>
+          <span class="nav-text" *ngIf="!isCollapsed">Users</span>
+        </a>
+        <a
           routerLink="/revision-history"
           routerLinkActive="active"
           class="nav-item"

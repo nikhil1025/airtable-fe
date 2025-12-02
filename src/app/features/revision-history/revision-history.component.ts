@@ -23,6 +23,7 @@ import { AirtableTable } from '../../core/models/table.model';
 import { AuthService } from '../../core/services/auth.service';
 import { DataStateService } from '../../core/services/data-state.service';
 import { ProjectService } from '../../core/services/project.service';
+import { RealDataService } from '../../core/services/real-data.service';
 import {
   RevisionHistoryRecord,
   RevisionHistoryService,
@@ -1380,6 +1381,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     private revisionHistoryService: RevisionHistoryService,
     private projectService: ProjectService,
     private tableService: TableService,
+    private realDataService: RealDataService,
     private snackBar: MatSnackBar,
     private router: Router
   ) {}
@@ -1585,6 +1587,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
           // Wait a bit for data to be written to DB, then refresh
           setTimeout(() => {
             this.loadRevisionHistory();
+            this.refreshStats();
           }, 500);
         } else {
           this.showError('Sync completed but no data was returned');
@@ -1598,6 +1601,23 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
           error?.message ||
           'Failed to sync revision history';
         this.showError(errorMsg);
+      },
+    });
+  }
+
+  refreshStats(): void {
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    this.realDataService.getStats(userId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.dataStateService.updateStats(response.data.stats);
+          console.log('📊 Stats refreshed:', response.data.stats);
+        }
+      },
+      error: (error) => {
+        console.error('Failed to refresh stats:', error);
       },
     });
   }
@@ -1846,30 +1866,32 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       tableId: this.hierarchySelectedTableId,
     };
 
-    console.log('Scraping record revisions:', params);
+    console.log('Syncing record revisions (scrape + cleanup):', params);
 
-    this.revisionHistoryService.scrapeRecordRevisions(params).subscribe({
+    this.revisionHistoryService.syncRecordRevisions(params).subscribe({
       next: (response) => {
         this.scrapingRecord = false;
         if (response.success) {
-          this.showSuccess('Record revision history scraped successfully!');
-          // Reload the record revisions after scraping
+          const duplicatesMsg = response.data?.duplicatesRemoved
+            ? ` (${response.data.duplicatesRemoved} duplicate(s) removed)`
+            : '';
+          this.showSuccess(`Record synced successfully!${duplicatesMsg}`);
+          // Reload the record revisions after syncing
           setTimeout(() => {
             this.loadRecordRevisions(this.hierarchySelectedRecordId);
+            this.refreshStats();
           }, 500);
         } else {
-          this.showError(
-            response.message || 'Failed to scrape record revisions'
-          );
+          this.showError(response.message || 'Failed to sync record revisions');
         }
       },
       error: (error) => {
         this.scrapingRecord = false;
-        console.error('Failed to scrape record revisions:', error);
+        console.error('Failed to sync record revisions:', error);
         const errorMsg =
           error?.error?.message ||
           error?.message ||
-          'Failed to scrape record revisions';
+          'Failed to sync record revisions';
         this.showError(errorMsg);
       },
     });

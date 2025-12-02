@@ -264,7 +264,7 @@ export class RevisionHistoryService {
   }
 
   /**
-   * Scrape revision history for a specific record
+   * Scrape revision history for a specific record (deprecated - use syncRecordRevisions)
    */
   scrapeRecordRevisions(params: {
     userId: string;
@@ -277,6 +277,26 @@ export class RevisionHistoryService {
       url,
       params,
     });
+    return this.http.post<ApiResponse<any>>(url, params);
+  }
+
+  /**
+   * Sync revision history for a specific record (includes scraping + duplicate cleanup)
+   */
+  syncRecordRevisions(params: {
+    userId: string;
+    recordId: string;
+    baseId: string;
+    tableId: string;
+  }): Observable<ApiResponse<any>> {
+    const url = `${environment.apiBaseUrl}/revision-history/sync/record`;
+    console.log(
+      ' [RevisionHistoryService] Syncing record revisions with cleanup',
+      {
+        url,
+        params,
+      }
+    );
     return this.http.post<ApiResponse<any>>(url, params);
   }
 }

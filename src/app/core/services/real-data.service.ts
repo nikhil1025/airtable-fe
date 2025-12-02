@@ -10,6 +10,7 @@ export interface RealStatsResponse {
       projects: number;
       tables: number;
       tickets: number;
+      users: number;
       revisions: number;
     };
     message: string;
