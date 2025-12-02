@@ -374,7 +374,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
                         </div>
                         <div class="user-info">
                           <span class="user-name">{{
-                            revision.authoredBy
+                            revision.authorName
                           }}</span>
                           <span class="revision-time">{{
                             formatRevisionTime(revision.createdDate)
@@ -399,33 +399,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
                       <div class="detail-section">
                         <span class="detail-label">IMPORTED BY</span>
                         <span class="detail-value">{{
-                          revision.authoredBy
-                        }}</span>
-                      </div>
-
-                      <div class="detail-section">
-                        <span class="detail-label"
-                          >NUMBER OF RECORDS IMPORTED</span
-                        >
-                        <span class="detail-value">1</span>
-                      </div>
-
-                      <div class="detail-section">
-                        <span class="detail-label">SOURCE SYSTEM</span>
-                        <span class="detail-value">System Import</span>
-                      </div>
-
-                      <div class="detail-section">
-                        <span class="detail-label">NOTES</span>
-                        <span class="detail-value notes"
-                          >Field update: {{ revision.columnType }}</span
-                        >
-                      </div>
-
-                      <div class="detail-section">
-                        <span class="detail-label">RELATED TABLE</span>
-                        <span class="detail-value related-link">{{
-                          getTableNameById(hierarchySelectedTableId)
+                          revision.authorName
                         }}</span>
                       </div>
                     </div>
@@ -434,7 +408,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
                       <div class="change-item">
                         <div class="change-header">
                           <span class="field-name">{{
-                            revision.columnType
+                            stripFieldType(revision.columnType)
                           }}</span>
                         </div>
                         <div class="change-values">
@@ -1305,6 +1279,11 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       sortable: true,
       filter: 'agTextColumnFilter',
       width: 150,
+      valueFormatter: (params) => {
+        if (!params.value) return '-';
+        // Remove field type suffix like (select), (text), etc.
+        return params.value.replace(/\s*\([^)]+\)\s*$/, '');
+      },
     },
     {
       headerName: 'Old Value',
@@ -1939,6 +1918,12 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   getTableNameById(tableId: string): string {
     const table = this.hierarchyTables.find((t) => t.id === tableId);
     return table ? table.name : 'Unknown Table';
+  }
+
+  stripFieldType(columnType: string): string {
+    if (!columnType) return '';
+    // Remove field type suffix like (select), (text), etc.
+    return columnType.replace(/\s*\([^)]+\)\s*$/, '');
   }
 
   private showSuccess(message: string): void {

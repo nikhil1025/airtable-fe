@@ -11,6 +11,7 @@ export interface RevisionHistoryRecord {
   newValue: string;
   createdDate: string;
   authoredBy: string;
+  authorName: string;
   userId?: string;
   baseId?: string;
   tableId?: string;
