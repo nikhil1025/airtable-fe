@@ -130,4 +130,47 @@ export class AuthService {
 
     return userId;
   }
+
+  /**
+   * MFA Authentication - Step 1: Initiate login
+   */
+  initiateLoginMFA(
+    email: string,
+    password: string,
+    userId: string
+  ): Observable<any> {
+    return this.http.post(`${this.API_URL}/mfa-auth/initiate-login`, {
+      email,
+      password,
+      userId,
+    });
+  }
+
+  /**
+   * MFA Authentication - Step 2: Submit MFA code
+   */
+  submitMFA(sessionId: string, mfaCode: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/mfa-auth/submit-mfa`, {
+      sessionId,
+      mfaCode,
+    });
+  }
+
+  /**
+   * MFA Authentication - Cancel session
+   */
+  cancelMFASession(sessionId: string): Observable<any> {
+    return this.http.post(`${this.API_URL}/mfa-auth/cancel-session`, {
+      sessionId,
+    });
+  }
+
+  /**
+   * MFA Authentication - Get session status
+   */
+  getMFASessionStatus(sessionId: string): Observable<any> {
+    return this.http.get(
+      `${this.API_URL}/mfa-auth/session-status/${sessionId}`
+    );
+  }
 }

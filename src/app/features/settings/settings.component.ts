@@ -74,11 +74,11 @@ import { AuthService } from '../../core/services/auth.service';
           <div class="button-group">
             <button
               class="btn btn-primary"
-              (click)="autoRetrieveCookies()"
+              (click)="loginWithMFA()"
               [disabled]="loading || !airtableEmail || !airtablePassword"
             >
               <span *ngIf="loading" class="spinner-sm"></span>
-              <span *ngIf="!loading">Auto-Retrieve Cookies</span>
+              <span *ngIf="!loading">Login with MFA</span>
             </button>
             <button
               class="btn btn-secondary"
@@ -129,6 +129,50 @@ import { AuthService } from '../../core/services/auth.service';
             >
               Copy All Cookies
             </button>
+          </div>
+        </div>
+
+        <!-- MFA Dialog -->
+        <div *ngIf="showMFADialog" class="mfa-overlay">
+          <div class="mfa-dialog">
+            <h3>🔐 MFA Authentication Required</h3>
+            <p class="mfa-message">{{ mfaMessage }}</p>
+
+            <div class="form-group">
+              <label for="mfaCode">Enter MFA Code</label>
+              <input
+                id="mfaCode"
+                type="text"
+                [(ngModel)]="mfaCode"
+                class="input"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+                [disabled]="loading"
+                (keyup.enter)="submitMFACode()"
+              />
+            </div>
+
+            <div class="button-group">
+              <button
+                class="btn btn-primary"
+                (click)="submitMFACode()"
+                [disabled]="loading || !mfaCode || mfaCode.length !== 6"
+              >
+                <span *ngIf="loading" class="spinner-sm"></span>
+                <span *ngIf="!loading">Submit MFA Code</span>
+              </button>
+              <button
+                class="btn btn-outline"
+                (click)="cancelMFALogin()"
+                [disabled]="loading"
+              >
+                Cancel
+              </button>
+            </div>
+
+            <div *ngIf="mfaError" class="error-message">
+              {{ mfaError }}
+            </div>
           </div>
         </div>
 
@@ -390,6 +434,71 @@ import { AuthService } from '../../core/services/auth.service';
         padding: 0.25rem 0.75rem;
         border-radius: 12px;
         font-size: 0.875rem;
+        background: #f4f4f5;
+        color: #71717a;
+      }
+      .status-badge.active {
+        background: #dcfce7;
+        color: #16a34a;
+      }
+      code {
+        background: #f4f4f5;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.875rem;
+      }
+
+      /* MFA Dialog Styles */
+      .mfa-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+
+      .mfa-dialog {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      }
+
+      .mfa-dialog h3 {
+        margin: 0 0 1rem;
+        font-size: 1.5rem;
+        color: #18181b;
+      }
+
+      .mfa-message {
+        color: #71717a;
+        margin-bottom: 1.5rem;
+      }
+
+      .error-message {
+        background: #fee2e2;
+        border: 1px solid #fca5a5;
+        color: #dc2626;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-top: 1rem;
+        font-size: 0.875rem;
+      }
+      .status-row:last-child {
+        border-bottom: none;
+      }
+      .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.875rem;
         background: #fef2f2;
         color: #dc2626;
       }
@@ -438,6 +547,12 @@ export class SettingsComponent implements OnInit {
   isAuthenticated = false;
   currentUserId: string | null = null;
   displayedCookies: Array<{ name: string; value: string }> = [];
+
+  // MFA Authentication
+  showMFADialog = false;
+  mfaSessionId = '';
+  mfaMessage = '';
+  mfaError = '';
 
   constructor(
     private authService: AuthService,
@@ -706,5 +821,133 @@ export class SettingsComponent implements OnInit {
       duration: 5000,
       panelClass: ['error-snackbar'],
     });
+  }
+
+  /**
+   * MFA Authentication - Step 1: Initiate login
+   */
+  loginWithMFA(): void {
+    if (!this.airtableEmail || !this.airtablePassword) {
+      this.showError('Email and password are required');
+      return;
+    }
+
+    const userId = this.authService.currentUserId;
+    if (!userId) {
+      this.showError(
+        'User not authenticated. Please complete OAuth login first.'
+      );
+      return;
+    }
+
+    this.loading = true;
+    this.mfaError = '';
+
+    this.authService
+      .initiateLoginMFA(
+        this.airtableEmail.trim(),
+        this.airtablePassword,
+        userId
+      )
+      .subscribe({
+        next: (response) => {
+          console.log('Login initiation response:', response);
+          this.loading = false;
+
+          if (response.success && response.requiresMFA) {
+            // MFA required - show dialog
+            this.showMFADialog = true;
+            this.mfaSessionId = response.sessionId;
+            this.mfaMessage = response.message;
+            this.mfaCode = '';
+          } else if (response.success && !response.requiresMFA) {
+            // No MFA needed - cookies already saved
+            this.showSuccess('Login successful! Cookies saved.');
+            this.validateCookies();
+            this.loadCookiesForDisplay();
+          } else {
+            this.showError(response.message || 'Login failed');
+          }
+        },
+        error: (error) => {
+          console.error('Login initiation error:', error);
+          this.loading = false;
+          this.showError(error.error?.message || 'Failed to initiate login');
+        },
+      });
+  }
+
+  /**
+   * MFA Authentication - Step 2: Submit MFA code
+   */
+  submitMFACode(): void {
+    if (!this.mfaCode || this.mfaCode.length !== 6) {
+      this.mfaError = 'Please enter a 6-digit MFA code';
+      return;
+    }
+
+    this.loading = true;
+    this.mfaError = '';
+
+    this.authService.submitMFA(this.mfaSessionId, this.mfaCode).subscribe({
+      next: (response) => {
+        console.log('MFA submission response:', response);
+        this.loading = false;
+
+        if (response.success) {
+          this.showSuccess('MFA verified! Cookies saved successfully.');
+          this.showMFADialog = false;
+          this.mfaSessionId = '';
+          this.mfaCode = '';
+          this.validateCookies();
+          this.loadCookiesForDisplay();
+        } else {
+          this.mfaError = response.message || 'MFA verification failed';
+        }
+      },
+      error: (error) => {
+        console.error('MFA submission error:', error);
+        this.loading = false;
+        this.mfaError = error.error?.message || 'Failed to submit MFA code';
+      },
+    });
+  }
+
+  /**
+   * Cancel MFA login
+   */
+  cancelMFALogin(): void {
+    if (this.mfaSessionId) {
+      this.authService.cancelMFASession(this.mfaSessionId).subscribe({
+        next: () => {
+          console.log('Session cancelled');
+        },
+        error: (error) => {
+          console.error('Failed to cancel session:', error);
+        },
+      });
+    }
+
+    this.showMFADialog = false;
+    this.mfaSessionId = '';
+    this.mfaCode = '';
+    this.mfaError = '';
+    this.loading = false;
+  }
+
+  /**
+   * Get baseId from localStorage
+   */
+  private getBaseIdFromLocalStorage(): string | null {
+    try {
+      const connectionStr = localStorage.getItem('airtable_connection');
+      if (connectionStr) {
+        const connection = JSON.parse(connectionStr);
+        return connection.baseId || null;
+      }
+    } catch (e) {
+      console.error('Failed to parse connection from localStorage', e);
+    }
+    return null;
   }
 }
