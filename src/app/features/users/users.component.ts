@@ -46,6 +46,15 @@ ModuleRegistry.registerModules([AllCommunityModule]);
           </div>
           <div class="header-actions">
             <button
+              class="btn btn-primary"
+              (click)="syncUsers()"
+              [disabled]="syncing"
+            >
+              <span *ngIf="syncing" class="spinner"></span>
+              <mat-icon *ngIf="!syncing">sync</mat-icon>
+              {{ syncing ? 'Syncing...' : 'Sync Users' }}
+            </button>
+            <button
               class="btn btn-secondary"
               (click)="exportData()"
               [disabled]="!rowData.length"
@@ -53,6 +62,21 @@ ModuleRegistry.registerModules([AllCommunityModule]);
               Export CSV
             </button>
           </div>
+        </div>
+
+        <!-- Workspace Selector -->
+        <div class="workspace-selector" *ngIf="workspaces.length > 1">
+          <label>Workspace:</label>
+          <select
+            [(ngModel)]="selectedWorkspaceId"
+            (change)="onWorkspaceChange()"
+            class="workspace-select"
+          >
+            <option value="">All Workspaces</option>
+            <option *ngFor="let ws of workspaces" [value]="ws.workspaceId">
+              {{ ws.workspaceName }}
+            </option>
+          </select>
         </div>
 
         <!-- Stats Cards -->
@@ -165,6 +189,42 @@ ModuleRegistry.registerModules([AllCommunityModule]);
       .header-actions {
         display: flex;
         gap: 0.75rem;
+      }
+      .workspace-selector {
+        background: white;
+        border: 1px solid #e4e4e7;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+      .workspace-selector label {
+        font-weight: 600;
+        color: #18181b;
+      }
+      .workspace-select {
+        flex: 1;
+        max-width: 400px;
+        padding: 0.5rem;
+        border: 1px solid #e4e4e7;
+        border-radius: 6px;
+        font-size: 0.875rem;
+      }
+      .spinner {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.6s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
       .stats-grid {
         display: grid;
@@ -311,7 +371,11 @@ export class UsersComponent implements OnInit, OnDestroy {
   private subscriptions: Subscription[] = [];
   rowData: WorkspaceUser[] = [];
   loading = false;
+  syncing = false;
   searchText = '';
+  workspaces: any[] = [];
+  selectedWorkspaceId = '';
+  workspaceMap: Map<string, string> = new Map();
 
   columnDefs: ColDef[] = [
     {
@@ -327,6 +391,27 @@ export class UsersComponent implements OnInit, OnDestroy {
       flex: 1.5,
       filter: 'agTextColumnFilter',
       sortable: true,
+    },
+    {
+      field: 'workspaceName',
+      headerName: 'Workspace',
+      flex: 1.5,
+      filter: 'agTextColumnFilter',
+      sortable: true,
+      valueGetter: (params) => {
+        return params.data?.workspaceName || 'Unknown';
+      },
+    },
+    {
+      field: 'permissionLevel',
+      headerName: 'Permission',
+      flex: 1,
+      filter: 'agTextColumnFilter',
+      sortable: true,
+      valueFormatter: (params) => {
+        if (!params.value) return 'N/A';
+        return params.value.charAt(0).toUpperCase() + params.value.slice(1);
+      },
     },
     {
       field: 'state',
@@ -383,6 +468,7 @@ export class UsersComponent implements OnInit, OnDestroy {
       });
     this.subscriptions.push(loadingSubscription);
 
+    this.loadWorkspaces();
     this.loadUsers();
   }
 
@@ -395,6 +481,90 @@ export class UsersComponent implements OnInit, OnDestroy {
     console.log('[Users] Grid Ready!');
     this.gridApi.refreshCells();
     this.gridApi.sizeColumnsToFit();
+  }
+
+  loadWorkspaces() {
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    this.userService.getWorkspaces(userId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.workspaces = response.data.workspaces || [];
+          // Build workspace ID to name map
+          this.workspaceMap.clear();
+          this.workspaces.forEach((ws) => {
+            this.workspaceMap.set(ws.workspaceId, ws.workspaceName);
+          });
+          console.log('[Users] Loaded workspaces:', this.workspaces);
+          console.log('[Users] Workspace map:', this.workspaceMap);
+        }
+      },
+      error: (error) => {
+        console.error('[Users] Error loading workspaces:', error);
+      },
+    });
+  }
+
+  onWorkspaceChange() {
+    const userId = this.authService.currentUserId;
+    if (!userId) return;
+
+    if (this.selectedWorkspaceId) {
+      // Fetch users for specific workspace
+      this.dataStateService.setLoading('users', true);
+      this.userService
+        .fetchUsersForWorkspace(userId, this.selectedWorkspaceId)
+        .subscribe({
+          next: (response) => {
+            this.dataStateService.setLoading('users', false);
+            if (response.success && response.data) {
+              this.dataStateService.setUsers(response.data.users || []);
+              this.showSuccess(
+                `Loaded ${response.data.users.length} users from ${response.data.workspaceName}`
+              );
+            }
+          },
+          error: (error) => {
+            this.dataStateService.setLoading('users', false);
+            this.showError('Failed to load workspace users');
+          },
+        });
+    } else {
+      // Load all users from cache
+      this.loadUsers();
+    }
+  }
+
+  syncUsers() {
+    const userId = this.authService.currentUserId;
+    if (!userId) {
+      this.showError('User not authenticated');
+      return;
+    }
+
+    this.syncing = true;
+    console.log('[Users] Syncing users from Airtable...');
+
+    // Fetch and store users from all workspaces
+    this.userService.fetchUsersForWorkspace(userId).subscribe({
+      next: (response) => {
+        this.syncing = false;
+        if (response.success) {
+          this.showSuccess('Users synced successfully!');
+          // Reload from cache to get stored data
+          this.loadUsers();
+          this.loadWorkspaces();
+        }
+      },
+      error: (error) => {
+        this.syncing = false;
+        console.error('[Users] Sync failed:', error);
+        this.showError(
+          'Failed to sync users: ' + (error.message || 'Unknown error')
+        );
+      },
+    });
   }
 
   loadUsers() {
@@ -431,7 +601,7 @@ export class UsersComponent implements OnInit, OnDestroy {
             );
           } else {
             this.showInfo(
-              'No users found in cache. Run "Sync All" from Projects page.'
+              'No users found in cache. Click "Sync Users" to fetch from Airtable.'
             );
           }
         } else {

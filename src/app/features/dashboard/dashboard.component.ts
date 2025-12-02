@@ -82,14 +82,14 @@ import { RealDataService } from '../../core/services/real-data.service';
             </div>
           </div>
 
-          <!-- <div class="stat-card clickable" routerLink="/users">
+          <div class="stat-card clickable" routerLink="/users">
             <mat-icon class="stat-icon users">people</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Users</div>
               <div class="stat-value">{{ stats.users }}</div>
               <div class="stat-hint">Click to view →</div>
             </div>
-          </div> -->
+          </div>
 
           <div class="stat-card clickable" routerLink="/revision-history">
             <mat-icon class="stat-icon history">history</mat-icon>
@@ -119,13 +119,13 @@ import { RealDataService } from '../../core/services/real-data.service';
                 <small>Access table records</small>
               </div>
             </button>
-            <!-- <button class="action-btn" routerLink="/users">
+            <button class="action-btn" routerLink="/users">
               <mat-icon class="action-icon">people</mat-icon>
               <div class="action-content">
                 <strong>Workspace Users</strong>
                 <small>View collaborators</small>
               </div>
-            </button> -->
+            </button>
             <button class="action-btn" routerLink="/revision-history">
               <mat-icon class="action-icon">history</mat-icon>
               <div class="action-content">
