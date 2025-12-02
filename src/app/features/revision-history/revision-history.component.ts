@@ -1843,7 +1843,11 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
   }
 
   scrapeAndRefreshRecordDetail(): void {
-    if (!this.hierarchySelectedRecordId || !this.hierarchySelectedBaseId || !this.hierarchySelectedTableId) {
+    if (
+      !this.hierarchySelectedRecordId ||
+      !this.hierarchySelectedBaseId ||
+      !this.hierarchySelectedTableId
+    ) {
       this.showError('Missing required information to scrape record');
       return;
     }
@@ -1860,7 +1864,7 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       userId,
       recordId: this.hierarchySelectedRecordId,
       baseId: this.hierarchySelectedBaseId,
-      tableId: this.hierarchySelectedTableId
+      tableId: this.hierarchySelectedTableId,
     };
 
     console.log('Scraping record revisions:', params);
@@ -1875,15 +1879,20 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
             this.loadRecordRevisions(this.hierarchySelectedRecordId);
           }, 500);
         } else {
-          this.showError(response.message || 'Failed to scrape record revisions');
+          this.showError(
+            response.message || 'Failed to scrape record revisions'
+          );
         }
       },
       error: (error) => {
         this.scrapingRecord = false;
         console.error('Failed to scrape record revisions:', error);
-        const errorMsg = error?.error?.message || error?.message || 'Failed to scrape record revisions';
+        const errorMsg =
+          error?.error?.message ||
+          error?.message ||
+          'Failed to scrape record revisions';
         this.showError(errorMsg);
-      }
+      },
     });
   }
 
