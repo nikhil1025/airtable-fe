@@ -145,7 +145,7 @@ h6 {
 .mat-mdc-snack-bar-container {
   --mdc-snackbar-container-color: white !important;
   --mdc-snackbar-supporting-text-color: #27272a !important;
-  --mat-snack-bar-button-color: #2563eb !important;
+  --mat-snack-bar-button-color: #27272a !important;
 
   border-radius: 12px !important;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
@@ -170,15 +170,17 @@ h6 {
 }
 
 .mat-mdc-snack-bar-container .mat-mdc-button {
-  color: #2563eb !important;
+  color: #27272a !important;
   font-weight: 600 !important;
   text-transform: none !important;
   letter-spacing: 0 !important;
+  background-color: transparent !important;
 }
 
 /* Success Toast */
 .mat-mdc-snack-bar-container.success-snackbar {
   --mdc-snackbar-container-color: white !important;
+  --mdc-snackbar-supporting-text-color: #27272a !important;
 }
 
 .mat-mdc-snack-bar-container.success-snackbar .mdc-snackbar__surface {
@@ -186,11 +188,22 @@ h6 {
   border-left: 4px solid #10b981 !important;
 }
 
+.mat-mdc-snack-bar-container.success-snackbar .mdc-snackbar__label,
+.mat-mdc-snack-bar-container.success-snackbar .mat-mdc-button {
+  color: #27272a !important;
+}
+
+.mat-mdc-snack-bar-container.success-snackbar .mat-mdc-button:hover {
+  background-color: #f4f4f5 !important;
+  color: #27272a !important;
+}
+
 /* Success, error, and warning toasts use colored left borders instead of emojis */
 
 /* Error Toast */
 .mat-mdc-snack-bar-container.error-snackbar {
   --mdc-snackbar-container-color: white !important;
+  --mdc-snackbar-supporting-text-color: #27272a !important;
 }
 
 .mat-mdc-snack-bar-container.error-snackbar .mdc-snackbar__surface {
@@ -198,14 +211,35 @@ h6 {
   border-left: 4px solid #ef4444 !important;
 }
 
+.mat-mdc-snack-bar-container.error-snackbar .mdc-snackbar__label,
+.mat-mdc-snack-bar-container.error-snackbar .mat-mdc-button {
+  color: #27272a !important;
+}
+
+.mat-mdc-snack-bar-container.error-snackbar .mat-mdc-button:hover {
+  background-color: #f4f4f5 !important;
+  color: #27272a !important;
+}
+
 /* Warning Toast */
 .mat-mdc-snack-bar-container.warning-snackbar {
   --mdc-snackbar-container-color: white !important;
+  --mdc-snackbar-supporting-text-color: #27272a !important;
 }
 
 .mat-mdc-snack-bar-container.warning-snackbar .mdc-snackbar__surface {
   background-color: white !important;
   border-left: 4px solid #f59e0b !important;
+}
+
+.mat-mdc-snack-bar-container.warning-snackbar .mdc-snackbar__label,
+.mat-mdc-snack-bar-container.warning-snackbar .mat-mdc-button {
+  color: #27272a !important;
+}
+
+.mat-mdc-snack-bar-container.warning-snackbar .mat-mdc-button:hover {
+  background-color: #f4f4f5 !important;
+  color: #27272a !important;
 }
 
 /* Material Select Panel */
