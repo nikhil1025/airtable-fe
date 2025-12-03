@@ -21,7 +21,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { ProjectService } from '../../core/services/project.service';
 import { TableService } from '../../core/services/table.service';
 
-// Register AG Grid Community modules (FREE version)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({

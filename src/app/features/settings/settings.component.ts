@@ -609,8 +609,6 @@ export class SettingsComponent implements OnInit {
   }
 
   autoRetrieveCookies(): void {
-    console.log('[Settings] autoRetrieveCookies called');
-
     if (!this.airtableEmail || !this.airtablePassword) {
       this.showError('Email and password are required');
       return;
@@ -619,8 +617,6 @@ export class SettingsComponent implements OnInit {
     this.loading = true;
     this.cookieStatus = null;
     const userId = this.authService.currentUserId;
-
-    console.log('[Settings] Current userId:', userId);
 
     if (!userId) {
       this.showError(
@@ -636,13 +632,10 @@ export class SettingsComponent implements OnInit {
       userId: userId, // Pass existing userId to avoid creating duplicate
     };
 
-    console.log('[Settings] Sending auto-retrieve request for userId:', userId);
-
     this.http
       .post<any>(`${environment.apiBaseUrl}/auth/validate`, request)
       .subscribe({
         next: (response) => {
-          console.log('[Settings] Auto-retrieve response:', response);
           this.loading = false;
           if (response.success) {
             // Verify the userId matches
@@ -655,7 +648,6 @@ export class SettingsComponent implements OnInit {
                 }
               );
             }
-            console.log('[Settings] Cookies stored for userId:', userId);
 
             this.showSuccess(
               `Authentication successful! Cookies extracted and stored. (${
@@ -732,9 +724,6 @@ export class SettingsComponent implements OnInit {
       });
   }
 
-  /**
-   * Load cookies for display in the UI
-   */
   loadCookiesForDisplay(): void {
     const userId = this.authService.currentUserId;
     if (!userId) return;
@@ -758,17 +747,11 @@ export class SettingsComponent implements OnInit {
       });
   }
 
-  /**
-   * Truncate cookie value for display
-   */
   truncateCookieValue(value: string): string {
     if (!value) return '';
     return value.length > 50 ? value.substring(0, 50) + '...' : value;
   }
 
-  /**
-   * Copy all cookies to clipboard in browser-friendly format
-   */
   copyCookiesToClipboard(): void {
     if (this.displayedCookies.length === 0) {
       this.showError('No cookies to copy');
@@ -786,10 +769,6 @@ export class SettingsComponent implements OnInit {
     );
   }
 
-  /**
-   * TEST ONLY: Display cookies in console for debugging
-   * TODO: Remove this method after testing
-   */
   displayCookiesForTesting(): void {
     const userId = this.authService.currentUserId;
     if (!userId) {
@@ -809,14 +788,6 @@ export class SettingsComponent implements OnInit {
             .get<any>(`${environment.apiBaseUrl}/cookies/get/${userId}`)
             .subscribe({
               next: (cookieResponse) => {
-                console.group(' COOKIES FOR TESTING');
-                console.log('Raw cookies:', cookieResponse.data);
-                console.log(
-                  'Cookie string:',
-                  this.formatCookiesForBrowser(cookieResponse.data)
-                );
-                console.groupEnd();
-
                 // Copy to clipboard
                 const cookieString = this.formatCookiesForBrowser(
                   cookieResponse.data
@@ -857,9 +828,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  /**
-   * MFA Authentication - Step 1: Initiate login
-   */
   loginWithMFA(): void {
     if (!this.airtableEmail || !this.airtablePassword) {
       this.showError('Email and password are required');
@@ -885,7 +853,6 @@ export class SettingsComponent implements OnInit {
       )
       .subscribe({
         next: (response) => {
-          console.log('Login initiation response:', response);
           this.loading = false;
 
           if (response.success && response.requiresMFA) {
@@ -911,9 +878,6 @@ export class SettingsComponent implements OnInit {
       });
   }
 
-  /**
-   * MFA Authentication - Step 2: Submit MFA code
-   */
   submitMFACode(): void {
     if (!this.mfaCode || this.mfaCode.length !== 6) {
       this.mfaError = 'Please enter a 6-digit MFA code';
@@ -928,7 +892,6 @@ export class SettingsComponent implements OnInit {
 
     this.authService.submitMFA(this.mfaSessionId, this.mfaCode).subscribe({
       next: (response) => {
-        console.log('MFA submission response:', response);
         this.loading = false;
         this.extractingCookies = false;
         this.cookieExtractionMessage = '';
@@ -954,9 +917,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  /**
-   * Cancel MFA login
-   */
   cancelMFALogin(): void {
     if (this.mfaSessionId) {
       this.authService.cancelMFASession(this.mfaSessionId).subscribe({
@@ -978,9 +938,6 @@ export class SettingsComponent implements OnInit {
     this.cookieExtractionMessage = '';
   }
 
-  /**
-   * Get baseId from localStorage
-   */
   private getBaseIdFromLocalStorage(): string | null {
     try {
       const connectionStr = localStorage.getItem('airtable_connection');

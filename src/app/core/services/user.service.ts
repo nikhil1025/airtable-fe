@@ -32,9 +32,6 @@ export class UserService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Get workspace users from MongoDB cache (fast load)
-   */
   getUsers(userId: string): Observable<ApiResponse<WorkspaceUsersResponse>> {
     return this.http.post<ApiResponse<WorkspaceUsersResponse>>(
       `${this.API_URL}`,
@@ -42,16 +39,10 @@ export class UserService {
     );
   }
 
-  /**
-   * Sync workspace users (refresh from Airtable)
-   */
   syncUsers(userId: string): Observable<ApiResponse<any>> {
     return this.http.post<ApiResponse<any>>(`${this.API_URL}/sync`, { userId });
   }
 
-  /**
-   * Get all workspaces for a user
-   */
   getWorkspaces(
     userId: string
   ): Observable<
@@ -62,9 +53,6 @@ export class UserService {
     >(`${this.API_URL}/workspaces/${userId}`);
   }
 
-  /**
-   * Fetch users for a specific workspace using cookies
-   */
   fetchUsersForWorkspace(
     userId: string,
     workspaceId?: string
@@ -76,9 +64,6 @@ export class UserService {
     return this.http.get<ApiResponse<WorkspaceUsersResult>>(url);
   }
 
-  /**
-   * Fetch users from all workspaces with detailed results
-   */
   fetchUsersFromAllWorkspaces(
     userId: string
   ): Observable<ApiResponse<AllWorkspacesResponse>> {

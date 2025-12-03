@@ -12,9 +12,6 @@ export class ProjectService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Sync bases from Airtable API (force refresh)
-   */
   syncBases(
     request: SyncBasesRequest
   ): Observable<ApiResponse<SyncBasesResponse>> {
@@ -24,9 +21,6 @@ export class ProjectService {
     );
   }
 
-  /**
-   * Get bases from MongoDB cache (fast load)
-   */
   getBases(userId: string): Observable<ApiResponse<SyncBasesResponse>> {
     return this.http.post<ApiResponse<SyncBasesResponse>>(
       `${this.API_URL}/bases`,
@@ -34,9 +28,6 @@ export class ProjectService {
     );
   }
 
-  /**
-   * Sync all data (bases, tables, tickets, users) from Airtable API
-   */
   syncAll(userId: string): Observable<ApiResponse> {
     const url = `${this.API_URL}/all`;
     const payload = { userId };

@@ -433,7 +433,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success && response.data) {
           this.dataStateService.updateStats(response.data.stats);
-          console.log(' Loaded real stats from database:', response.data.stats);
         }
       },
       error: (error) => {
@@ -443,10 +442,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           next: (response) => {
             if (response.success && response.data) {
               this.dataStateService.updateStats(response.data.stats);
-              console.log(
-                ' Loaded demo stats as fallback:',
-                response.data.stats
-              );
             }
           },
           error: (demoError) => {
@@ -463,10 +458,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.dataStateService.setLoading('projects', false);
         if (response.success && response.data) {
           this.dataStateService.setProjects(response.data.bases || []);
-          console.log(
-            ' Loaded real projects from database:',
-            response.data.bases?.length || 0
-          );
         }
       },
       error: (error) => {
@@ -480,10 +471,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
             this.dataStateService.setLoading('projects', false);
             if (response.success && response.data) {
               this.dataStateService.setProjects(response.data.bases || []);
-              console.log(
-                ' Loaded demo projects as fallback:',
-                response.data.bases?.length || 0
-              );
             }
           },
           error: (demoError) => {
@@ -550,10 +537,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         next: (response) => {
           if (response.success && response.data) {
             this.dataStateService.updateStats(response.data.stats);
-            console.log(
-              ' Refreshed real stats after sync:',
-              response.data.stats
-            );
           }
         },
         error: (error) => {
@@ -568,10 +551,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
           this.dataStateService.setLoading('projects', false);
           if (response.success && response.data) {
             this.dataStateService.setProjects(response.data.bases || []);
-            console.log(
-              ' Refreshed real projects after sync:',
-              response.data.bases?.length || 0
-            );
           }
         },
         error: (error) => {

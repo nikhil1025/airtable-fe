@@ -213,11 +213,6 @@ export class OauthCallbackComponent implements OnInit {
 
             localStorage.setItem('airtable_tokens', JSON.stringify(tokens));
 
-            console.log(' OAuth tokens stored in localStorage:', {
-              accessToken: tokens.accessToken.substring(0, 20) + '...',
-              refreshToken: tokens.refreshToken.substring(0, 20) + '...',
-            });
-
             // Update local auth state
             this.authService.updateAuthState(userId, true, tokens.accessToken);
             this.loading = false;

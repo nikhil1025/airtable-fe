@@ -114,9 +114,6 @@ export class AuthService {
     }
   }
 
-  /**
-   * Get or generate a persistent user ID that stays consistent across sessions
-   */
   getPersistentUserId(): string {
     const PERSISTENT_USER_KEY = 'airtable_persistent_user_id';
     let userId = localStorage.getItem(PERSISTENT_USER_KEY);
@@ -131,9 +128,6 @@ export class AuthService {
     return userId;
   }
 
-  /**
-   * MFA Authentication - Step 1: Initiate login
-   */
   initiateLoginMFA(
     email: string,
     password: string,
@@ -146,9 +140,6 @@ export class AuthService {
     });
   }
 
-  /**
-   * MFA Authentication - Step 2: Submit MFA code
-   */
   submitMFA(sessionId: string, mfaCode: string): Observable<any> {
     return this.http.post(`${this.API_URL}/mfa-auth/submit-mfa`, {
       sessionId,
@@ -156,18 +147,12 @@ export class AuthService {
     });
   }
 
-  /**
-   * MFA Authentication - Cancel session
-   */
   cancelMFASession(sessionId: string): Observable<any> {
     return this.http.post(`${this.API_URL}/mfa-auth/cancel-session`, {
       sessionId,
     });
   }
 
-  /**
-   * MFA Authentication - Get session status
-   */
   getMFASessionStatus(sessionId: string): Observable<any> {
     return this.http.get(
       `${this.API_URL}/mfa-auth/session-status/${sessionId}`

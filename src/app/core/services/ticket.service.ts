@@ -16,9 +16,6 @@ export class TicketService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Sync tickets from Airtable API (force refresh)
-   */
   syncTickets(
     request: SyncTicketsRequest
   ): Observable<ApiResponse<SyncTicketsResponse>> {
@@ -28,9 +25,6 @@ export class TicketService {
     );
   }
 
-  /**
-   * Get tickets from MongoDB cache (fast load)
-   */
   getTickets(
     userId: string,
     baseId: string,

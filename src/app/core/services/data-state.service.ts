@@ -224,8 +224,6 @@ export class DataStateService {
   }
 
   // Check if data exists
-  // Removed hasProjects - always fetch fresh data
-
   hasTables(projectId: string): boolean {
     return (this.currentState.tables[projectId] || []).length > 0;
   }
@@ -237,10 +235,5 @@ export class DataStateService {
   // Private methods
   private updateState(newState: AppState): void {
     this.stateSubject.next(newState);
-    // No localStorage caching - use APIs for fresh data
   }
-
-  // Removed localStorage caching - always fetch fresh data from APIs
-
-  // Removed localStorage loading - always start with fresh state
 }

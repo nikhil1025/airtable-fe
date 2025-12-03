@@ -30,7 +30,6 @@ import {
 } from '../../core/services/revision-history.service';
 import { TableService } from '../../core/services/table.service';
 
-// Register AG Grid Community modules
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
@@ -1417,10 +1416,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
             this.showWarning(fullMessage);
           } else if (response.data.validUntil) {
             const validUntil = new Date(response.data.validUntil);
-            console.log(
-              ' Cookies are valid until:',
-              validUntil.toLocaleString()
-            );
           }
         } else {
           this.cookiesValid = false;
@@ -1461,10 +1456,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     this.tables = [];
 
     if (this.selectedBaseId) {
-      console.log(
-        ' Base changed, loading tables for base:',
-        this.selectedBaseId
-      );
       this.loadTables();
       this.loadRevisionHistory(); // Load revisions for the base
     } else {
@@ -1509,12 +1500,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       ...(this.selectedTableId && { tableId: this.selectedTableId }),
       limit: 1000,
     };
-
-    console.log('Loading revision history with filters:', {
-      baseId: this.selectedBaseId || 'All',
-      tableId: this.selectedTableId || 'All',
-      limit: 1000,
-    });
 
     this.revisionHistoryService.getRevisionHistory(request).subscribe({
       next: (response) => {
@@ -1575,8 +1560,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
     if (this.selectedBaseId) request.baseId = this.selectedBaseId;
     if (this.selectedTableId) request.tableId = this.selectedTableId;
 
-    console.log('Syncing revision history with request:', request);
-
     this.revisionHistoryService.syncRevisionHistory(request).subscribe({
       next: (response) => {
         this.loading = false;
@@ -1613,7 +1596,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       next: (response) => {
         if (response.success && response.data) {
           this.dataStateService.updateStats(response.data.stats);
-          console.log('📊 Stats refreshed:', response.data.stats);
         }
       },
       error: (error) => {
@@ -1639,12 +1621,9 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
     this.scraping = true;
 
-    console.log('Starting revision history scraping for user:', userId);
-
     // Step 1: Scrape revision history from Airtable
     this.revisionHistoryService.scrapeRevisionHistory(userId).subscribe({
       next: (response) => {
-        console.log('Scraping completed:', response);
 
         // Step 2: Load the scraped data from database
         this.revisionHistoryService.getUserRevisionHistory(userId).subscribe({
@@ -1656,7 +1635,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
               this.showSuccess(
                 `Data loaded successfully! ${this.rowData.length} revisions found.`
               );
-              console.log('Loaded revisions:', this.rowData.length);
             } else {
               this.showError('Failed to load data after scraping');
             }
@@ -1744,7 +1722,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
 
   onTabChange(event: any): void {
     this.selectedTabIndex = event.index;
-    console.log('Tab changed to:', event.index);
   }
 
   selectHierarchyBase(baseId: string): void {
@@ -1796,9 +1773,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
           this.loadingRecords = false;
           if (response.success && response.data) {
             this.hierarchyRecords = response.data.revisions || [];
-            console.log(
-              `Loaded ${this.hierarchyRecords.length} records for table`
-            );
           }
         },
         error: (error) => {
@@ -1822,9 +1796,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
         this.loadingRecordDetail = false;
         if (response.success && response.data) {
           this.selectedRecordRevisions = response.data.revisions || [];
-          console.log(
-            `Loaded ${this.selectedRecordRevisions.length} revisions for record ${recordId}`
-          );
         }
       },
       error: (error) => {
@@ -1865,8 +1836,6 @@ export class RevisionHistoryComponent implements OnInit, OnDestroy {
       baseId: this.hierarchySelectedBaseId,
       tableId: this.hierarchySelectedTableId,
     };
-
-    console.log('Syncing record revisions (scrape + cleanup):', params);
 
     this.revisionHistoryService.syncRecordRevisions(params).subscribe({
       next: (response) => {

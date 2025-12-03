@@ -12,9 +12,6 @@ export class TableService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Sync tables from Airtable API (force refresh)
-   */
   syncTables(
     request: SyncTablesRequest
   ): Observable<ApiResponse<SyncTablesResponse>> {
@@ -24,9 +21,6 @@ export class TableService {
     );
   }
 
-  /**
-   * Get tables from MongoDB cache (fast load)
-   */
   getTables(
     userId: string,
     baseId: string

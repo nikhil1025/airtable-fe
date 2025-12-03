@@ -20,7 +20,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataStateService } from '../../core/services/data-state.service';
 import { ProjectService } from '../../core/services/project.service';
 
-// Register AG Grid Community modules (FREE version)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
@@ -45,14 +44,6 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             <p class="subtitle">Manage your Airtable bases and sync data</p>
           </div>
           <div class="header-actions">
-            <!-- <button
-              class="btn btn-primary"
-              (click)="syncAll()"
-              [disabled]="loading"
-            >
-              <span *ngIf="loading" class="spinner"></span>
-              <span *ngIf="!loading">Sync All</span>
-            </button> -->
             <button
               class="btn btn-secondary"
               (click)="exportData()"
@@ -129,7 +120,6 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         </div>
         <!-- </div> -->
 
-        <!-- Empty State -->
         <div class="card empty-state" *ngIf="!loading && rowData.length === 0">
           <mat-icon class="empty-icon">folder</mat-icon>
           <h3>No Projects Found</h3>
@@ -387,21 +377,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    console.log('[Projects] Component initialized');
-    console.log(
-      '[Projects] Current userId from AuthService:',
-      this.authService.currentUserId
-    );
-
     // Subscribe to projects state
     const projectsSubscription = this.dataStateService
       .getProjectsObservable()
       .subscribe((projects) => {
         this.rowData = projects;
-        console.log(
-          ' [Projects] State updated with projects:',
-          projects.length
-        );
       });
     this.subscriptions.push(projectsSubscription);
 
@@ -422,11 +402,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
-    console.log('[Projects] Grid Ready!');
-    console.log('[Projects] Grid API:', this.gridApi);
-    console.log(' [Projects] Row Count:', this.gridApi.getDisplayedRowCount());
-    console.log('[Projects] Column Defs:', this.columnDefs);
-
     // Force refresh
     this.gridApi.refreshCells();
     this.gridApi.sizeColumnsToFit();
@@ -434,8 +409,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   loadProjects() {
     const userId = this.authService.currentUserId;
-
-    console.log('[Projects] Loading projects from cache...', { userId });
 
     if (!userId) {
       console.error(' [Projects] No userId - user not authenticated');
@@ -445,24 +418,15 @@ export class ProjectsComponent implements OnInit, OnDestroy {
     }
 
     // Always fetch fresh data from API - no caching
-
     this.dataStateService.setLoading('projects', true);
-    console.log(
-      '[Projects] Calling getBases API (cached) with userId:',
-      userId
-    );
 
     // Use getBases for fast cached load
     this.projectService.getBases(userId).subscribe({
       next: (response) => {
-        console.log('[Projects] API Response:', response);
         this.dataStateService.setLoading('projects', false);
         if (response.success && response.data) {
           this.dataStateService.setProjects(response.data.bases || []);
-          console.log(
-            ' [Projects] Loaded bases from cache:',
-            response.data.bases
-          );
+
           if (response.data.bases && response.data.bases.length > 0) {
             this.showSuccess(
               `Loaded ${response.data.bases.length} projects from cache`
@@ -495,8 +459,6 @@ export class ProjectsComponent implements OnInit, OnDestroy {
       this.loading = false;
       return;
     }
-
-    console.log('[Projects] Syncing all data from Airtable API...');
 
     this.projectService.syncAll(userId).subscribe({
       next: (response) => {

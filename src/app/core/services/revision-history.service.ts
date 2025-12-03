@@ -92,46 +92,28 @@ export class RevisionHistoryService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Sync revision history for a specific table
-   * Uses tickets DB to fetch record IDs and scrapes revision history in background
-   */
   syncRevisionHistory(
     request: SyncRevisionHistoryRequest
   ): Observable<ApiResponse<SyncRevisionHistoryResponse['data']>> {
     const url = `${this.API_URL}/sync`;
-    console.log(' [RevisionHistoryService] Syncing revision history', {
-      url,
-      request,
-    });
+
     return this.http.post<ApiResponse<SyncRevisionHistoryResponse['data']>>(
       url,
       request
     );
   }
 
-  /**
-   * Fetch revision history for a specific record
-   * Uses cookies for scraping individual record history
-   */
   fetchRevisionHistory(
     request: FetchRevisionHistoryRequest
   ): Observable<ApiResponse<FetchRevisionHistoryResponse['data']>> {
     const url = `${this.API_URL}/fetch`;
-    console.log(' [RevisionHistoryService] Fetching revision history', {
-      url,
-      request,
-    });
+
     return this.http.post<ApiResponse<FetchRevisionHistoryResponse['data']>>(
       url,
       request
     );
   }
 
-  /**
-   * Get revision history from MongoDB
-   * Fetches stored revision history data
-   */
   getRevisionHistory(
     request: GetRevisionHistoryRequest
   ): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
@@ -159,19 +141,11 @@ export class RevisionHistoryService {
     if (request.limit) params.limit = request.limit.toString();
     if (request.offset) params.skip = request.offset.toString();
 
-    console.log(' [RevisionHistoryService] Getting revision history', {
-      url,
-      params,
-    });
-
     return this.http.get<ApiResponse<GetRevisionHistoryResponse['data']>>(url, {
       params,
     });
   }
 
-  /**
-   * Check if user has valid cookies for revision history scraping
-   */
   checkCookieStatus(
     userId: string
   ): Observable<
@@ -183,10 +157,6 @@ export class RevisionHistoryService {
     >(url, { userId });
   }
 
-  /**
-   * Bulk automation for revision history
-   * Processes multiple tables/bases automatically
-   */
   runBulkAutomation(
     userId: string,
     baseId?: string
@@ -197,45 +167,23 @@ export class RevisionHistoryService {
       ...(baseId && { baseId }),
     };
 
-    console.log(' [RevisionHistoryService] Running bulk automation', {
-      url,
-      payload,
-    });
-
     return this.http.post<ApiResponse<any>>(url, payload);
   }
 
-  /**
-   * Scrape and fetch revision history from Airtable
-   * This will scrape data and store it in the database
-   */
   scrapeRevisionHistory(userId: string): Observable<ApiResponse<any>> {
     const url = `${environment.apiBaseUrl}/revision-history/fetch/${userId}`;
-    console.log(' [RevisionHistoryService] Scraping revision history', {
-      url,
-      userId,
-    });
+
     return this.http.get<ApiResponse<any>>(url);
   }
 
-  /**
-   * Get all revision history for a user from database
-   */
   getUserRevisionHistory(
     userId: string
   ): Observable<ApiResponse<GetRevisionHistoryResponse['data']>> {
     const url = `${environment.apiBaseUrl}/revision-history/user/${userId}`;
-    console.log(' [RevisionHistoryService] Getting user revision history', {
-      url,
-      userId,
-    });
+
     return this.http.get<ApiResponse<GetRevisionHistoryResponse['data']>>(url);
   }
 
-  /**
-   * Get filtered revision history
-   * Filter by baseId, tableId, userId with pagination
-   */
   getFilteredRevisions(params: {
     baseId?: string;
     tableId?: string;
@@ -244,28 +192,16 @@ export class RevisionHistoryService {
     skip?: number;
   }): Observable<ApiResponse<any>> {
     const url = `${environment.apiBaseUrl}/revision-history/filter`;
-    console.log(' [RevisionHistoryService] Getting filtered revisions', {
-      url,
-      params,
-    });
+
     return this.http.get<ApiResponse<any>>(url, { params: params as any });
   }
 
-  /**
-   * Get revision history for a specific record
-   */
   getRecordRevisions(recordId: string): Observable<ApiResponse<any>> {
     const url = `${environment.apiBaseUrl}/revision-history/record/${recordId}`;
-    console.log(' [RevisionHistoryService] Getting record revisions', {
-      url,
-      recordId,
-    });
+
     return this.http.get<ApiResponse<any>>(url);
   }
 
-  /**
-   * Scrape revision history for a specific record (deprecated - use syncRecordRevisions)
-   */
   scrapeRecordRevisions(params: {
     userId: string;
     recordId: string;
@@ -273,16 +209,10 @@ export class RevisionHistoryService {
     tableId: string;
   }): Observable<ApiResponse<any>> {
     const url = `${environment.apiBaseUrl}/revision-history/scrape/record`;
-    console.log(' [RevisionHistoryService] Scraping record revisions', {
-      url,
-      params,
-    });
+
     return this.http.post<ApiResponse<any>>(url, params);
   }
 
-  /**
-   * Sync revision history for a specific record (includes scraping + duplicate cleanup)
-   */
   syncRecordRevisions(params: {
     userId: string;
     recordId: string;
@@ -290,13 +220,7 @@ export class RevisionHistoryService {
     tableId: string;
   }): Observable<ApiResponse<any>> {
     const url = `${environment.apiBaseUrl}/revision-history/sync/record`;
-    console.log(
-      ' [RevisionHistoryService] Syncing record revisions with cleanup',
-      {
-        url,
-        params,
-      }
-    );
+
     return this.http.post<ApiResponse<any>>(url, params);
   }
 }

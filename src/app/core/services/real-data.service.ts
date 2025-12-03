@@ -66,9 +66,6 @@ export class RealDataService {
 
   constructor(private http: HttpClient) {}
 
-  /**
-   * Get real stats from database
-   */
   getStats(userId: string): Observable<RealStatsResponse> {
     const tokens = this.getTokensFromLocalStorage();
     const storedAuth = this.getAuthFromLocalStorage();
@@ -80,9 +77,6 @@ export class RealDataService {
     );
   }
 
-  /**
-   * Get real projects from database
-   */
   getProjects(userId: string): Observable<RealProjectsResponse> {
     const tokens = this.getTokensFromLocalStorage();
     const storedAuth = this.getAuthFromLocalStorage();
@@ -94,9 +88,6 @@ export class RealDataService {
     );
   }
 
-  /**
-   * Get real tables for a project from database
-   */
   getTables(projectId: string, userId: string): Observable<RealTablesResponse> {
     const tokens = this.getTokensFromLocalStorage();
     const storedAuth = this.getAuthFromLocalStorage();
@@ -108,9 +99,6 @@ export class RealDataService {
     );
   }
 
-  /**
-   * Get real tickets for a table from database
-   */
   getTickets(tableId: string, userId: string): Observable<RealTicketsResponse> {
     const tokens = this.getTokensFromLocalStorage();
     const storedAuth = this.getAuthFromLocalStorage();
@@ -122,9 +110,6 @@ export class RealDataService {
     );
   }
 
-  /**
-   * Force a fresh sync using OAuth tokens from localStorage
-   */
   syncFresh(userId: string): Observable<any> {
     const tokens = this.getTokensFromLocalStorage();
     const storedAuth = this.getAuthFromLocalStorage();
@@ -136,9 +121,6 @@ export class RealDataService {
     );
   }
 
-  /**
-   * Helper method to get OAuth tokens from localStorage
-   */
   private getTokensFromLocalStorage(): {
     accessToken?: string;
     refreshToken?: string;
@@ -168,10 +150,6 @@ export class RealDataService {
             tokens.airtable_refresh_token;
 
           if (accessToken && refreshToken) {
-            console.log(` Found OAuth tokens in localStorage[${source}]`, {
-              accessToken: accessToken.substring(0, 20) + '...',
-              refreshToken: refreshToken.substring(0, 20) + '...',
-            });
             return { accessToken, refreshToken };
           }
         } catch (e) {
@@ -200,9 +178,6 @@ export class RealDataService {
     return {};
   }
 
-  /**
-   * Helper method to get auth info from localStorage
-   */
   private getAuthFromLocalStorage(): {
     userId?: string;
     isAuthenticated?: boolean;

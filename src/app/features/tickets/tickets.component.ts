@@ -23,7 +23,6 @@ import { ProjectService } from '../../core/services/project.service';
 import { TableService } from '../../core/services/table.service';
 import { TicketService } from '../../core/services/ticket.service';
 
-// Register AG Grid Community modules (FREE version)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
@@ -490,8 +489,6 @@ export class TicketsComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    console.log('[Tickets] Component initialized');
-    console.log('[Tickets] Current userId:', this.authService.currentUserId);
     // Initialize with default columns
     this.columnDefs = [...this.defaultColumnDefs];
     this.loadProjects();
@@ -499,12 +496,10 @@ export class TicketsComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
-    console.log('[Tickets] Grid ready');
   }
 
   loadProjects() {
     const userId = this.authService.currentUserId;
-    console.log('[Tickets] Loading projects from cache for userId:', userId);
 
     if (!userId) {
       console.error(' [Tickets] No userId - redirecting to login');
@@ -515,7 +510,6 @@ export class TicketsComponent implements OnInit {
     // Load from cache
     this.projectService.getBases(userId).subscribe({
       next: (response) => {
-        console.log('[Tickets] Projects loaded from cache:', response);
         if (response.success && response.data) {
           this.projects = response.data.bases;
           console.log('[Tickets] Available projects:', this.projects);

@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiBaseUrl: 'https://api.yourdomain.com/api/airtable',
-  airtableOAuthCallbackUrl: 'https://yourdomain.com/oauth/callback',
+  apiBaseUrl: 'http://localhost:3000/api/airtable',
+  airtableOAuthCallbackUrl: 'http://localhost:4200/oauth/callback',
 };

@@ -20,7 +20,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataStateService } from '../../core/services/data-state.service';
 import { UserService } from '../../core/services/user.service';
 
-// Register AG Grid Community modules (FREE version)
 ModuleRegistry.registerModules([AllCommunityModule]);
 
 @Component({
@@ -449,14 +448,11 @@ export class UsersComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    console.log('[Users] Component initialized');
-
     // Subscribe to users state
     const usersSubscription = this.dataStateService
       .getUsersObservable()
       .subscribe((users) => {
         this.rowData = users;
-        console.log('[Users] State updated with users:', users.length);
       });
     this.subscriptions.push(usersSubscription);
 
@@ -478,7 +474,6 @@ export class UsersComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
-    console.log('[Users] Grid Ready!');
     this.gridApi.refreshCells();
     this.gridApi.sizeColumnsToFit();
   }
@@ -496,8 +491,6 @@ export class UsersComponent implements OnInit, OnDestroy {
           this.workspaces.forEach((ws) => {
             this.workspaceMap.set(ws.workspaceId, ws.workspaceName);
           });
-          console.log('[Users] Loaded workspaces:', this.workspaces);
-          console.log('[Users] Workspace map:', this.workspaceMap);
         }
       },
       error: (error) => {
@@ -544,7 +537,6 @@ export class UsersComponent implements OnInit, OnDestroy {
     }
 
     this.syncing = true;
-    console.log('[Users] Syncing users from Airtable...');
 
     // Fetch and store users from all workspaces
     this.userService.fetchUsersForWorkspace(userId).subscribe({
@@ -570,8 +562,6 @@ export class UsersComponent implements OnInit, OnDestroy {
   loadUsers() {
     const userId = this.authService.currentUserId;
 
-    console.log('[Users] Loading users from cache...', { userId });
-
     if (!userId) {
       console.error('[Users] No userId - user not authenticated');
       this.showError('User not authenticated. Please login first.');
@@ -580,18 +570,12 @@ export class UsersComponent implements OnInit, OnDestroy {
     }
 
     this.dataStateService.setLoading('users', true);
-    console.log('[Users] Calling getUsers API (cached) with userId:', userId);
 
     this.userService.getUsers(userId).subscribe({
       next: (response) => {
-        console.log('[Users] API Response:', response);
         this.dataStateService.setLoading('users', false);
         if (response.success && response.data) {
           this.dataStateService.setUsers(response.data.workspaceUsers || []);
-          console.log(
-            '[Users] Loaded users from cache:',
-            response.data.workspaceUsers
-          );
           if (
             response.data.workspaceUsers &&
             response.data.workspaceUsers.length > 0
