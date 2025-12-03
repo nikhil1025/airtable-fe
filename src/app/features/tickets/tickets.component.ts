@@ -749,7 +749,7 @@ export class TicketsComponent implements OnInit {
 
       case 'checkbox':
         colDef.valueFormatter = (params) => {
-          return params.value ? '✓' : '';
+          return params.value ? 'Yes' : 'No';
         };
         colDef.maxWidth = 100;
         break;
@@ -759,7 +759,7 @@ export class TicketsComponent implements OnInit {
           const value = params.value;
           if (!value) return '';
           const count = value.split(',').length;
-          return `📎 ${count}`;
+          return `${count} attachments`;
         };
         colDef.maxWidth = 120;
         break;

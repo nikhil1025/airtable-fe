@@ -103,7 +103,7 @@ import { AuthService } from '../../core/services/auth.service';
             [class.success]="cookieStatus.valid"
             [class.error]="!cookieStatus.valid"
           >
-            <strong>{{ cookieStatus.valid ? '✓ Valid' : '✗ Invalid' }}</strong>
+            <strong>{{ cookieStatus.valid ? 'Valid' : 'Invalid' }}</strong>
             <p>{{ cookieStatus.message }}</p>
             <p *ngIf="cookieStatus.validUntil">
               Valid until: {{ cookieStatus.validUntil | date : 'medium' }}
@@ -135,8 +135,8 @@ import { AuthService } from '../../core/services/auth.service';
         <!-- MFA Dialog -->
         <div *ngIf="showMFADialog" class="mfa-overlay">
           <div class="mfa-dialog">
-            <h3 *ngIf="!extractingCookies">🔐 MFA Authentication Required</h3>
-            <h3 *ngIf="extractingCookies">🍪 Extracting Cookies</h3>
+            <h3 *ngIf="!extractingCookies">MFA Authentication Required</h3>
+            <h3 *ngIf="extractingCookies">Extracting Cookies</h3>
             <p class="mfa-message" *ngIf="!extractingCookies">
               {{ mfaMessage }}
             </p>

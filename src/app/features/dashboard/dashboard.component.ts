@@ -42,7 +42,7 @@ import { RealDataService } from '../../core/services/real-data.service';
           [class.error]="!syncResult.success"
         >
           <strong>{{
-            syncResult.success ? '✓ Sync Complete!' : '✗ Sync Failed'
+            syncResult.success ? 'Sync Complete!' : 'Sync Failed'
           }}</strong>
           <p *ngIf="syncResult.success && syncResult.data">
             Synced {{ syncResult.data.synced.bases || 0 }} projects,
