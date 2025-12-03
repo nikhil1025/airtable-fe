@@ -135,43 +135,55 @@ import { AuthService } from '../../core/services/auth.service';
         <!-- MFA Dialog -->
         <div *ngIf="showMFADialog" class="mfa-overlay">
           <div class="mfa-dialog">
-            <h3>🔐 MFA Authentication Required</h3>
-            <p class="mfa-message">{{ mfaMessage }}</p>
+            <h3 *ngIf="!extractingCookies">🔐 MFA Authentication Required</h3>
+            <h3 *ngIf="extractingCookies">🍪 Extracting Cookies</h3>
+            <p class="mfa-message" *ngIf="!extractingCookies">
+              {{ mfaMessage }}
+            </p>
 
-            <div class="form-group">
-              <label for="mfaCode">Enter MFA Code</label>
-              <input
-                id="mfaCode"
-                type="text"
-                [(ngModel)]="mfaCode"
-                class="input"
-                placeholder="Enter 6-digit code"
-                maxlength="6"
-                [disabled]="loading"
-                (keyup.enter)="submitMFACode()"
-              />
+            <!-- Cookie Extraction Loading State -->
+            <div *ngIf="extractingCookies" class="cookie-extraction-loader">
+              <div class="spinner-large"></div>
+              <p class="extraction-message">{{ cookieExtractionMessage }}</p>
             </div>
 
-            <div class="button-group">
-              <button
-                class="btn btn-primary"
-                (click)="submitMFACode()"
-                [disabled]="loading || !mfaCode || mfaCode.length !== 6"
-              >
-                <span *ngIf="loading" class="spinner-sm"></span>
-                <span *ngIf="!loading">Submit MFA Code</span>
-              </button>
-              <button
-                class="btn btn-outline"
-                (click)="cancelMFALogin()"
-                [disabled]="loading"
-              >
-                Cancel
-              </button>
-            </div>
+            <!-- MFA Input (hidden during cookie extraction) -->
+            <div *ngIf="!extractingCookies">
+              <div class="form-group">
+                <label for="mfaCode">Enter MFA Code</label>
+                <input
+                  id="mfaCode"
+                  type="text"
+                  [(ngModel)]="mfaCode"
+                  class="input"
+                  placeholder="Enter 6-digit code"
+                  maxlength="6"
+                  [disabled]="loading"
+                  (keyup.enter)="submitMFACode()"
+                />
+              </div>
 
-            <div *ngIf="mfaError" class="error-message">
-              {{ mfaError }}
+              <div class="button-group">
+                <button
+                  class="btn btn-primary"
+                  (click)="submitMFACode()"
+                  [disabled]="loading || !mfaCode || mfaCode.length !== 6"
+                >
+                  <span *ngIf="loading" class="spinner-sm"></span>
+                  <span *ngIf="!loading">Submit MFA Code</span>
+                </button>
+                <button
+                  class="btn btn-outline"
+                  (click)="cancelMFALogin()"
+                  [disabled]="loading"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              <div *ngIf="mfaError" class="error-message">
+                {{ mfaError }}
+              </div>
             </div>
           </div>
         </div>
@@ -530,6 +542,26 @@ import { AuthService } from '../../core/services/auth.service';
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
       }
+      .cookie-extraction-loader {
+        text-align: center;
+        padding: 2rem 0;
+      }
+      .spinner-large {
+        display: inline-block;
+        width: 3rem;
+        height: 3rem;
+        border: 4px solid #e5e7eb;
+        border-top-color: #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+      }
+      .extraction-message {
+        font-size: 0.95rem;
+        color: #3b82f6;
+        font-weight: 500;
+        margin: 0;
+      }
       @keyframes spin {
         to {
           transform: rotate(360deg);
@@ -553,6 +585,8 @@ export class SettingsComponent implements OnInit {
   mfaSessionId = '';
   mfaMessage = '';
   mfaError = '';
+  extractingCookies = false;
+  cookieExtractionMessage = '';
 
   constructor(
     private authService: AuthService,
@@ -888,11 +922,16 @@ export class SettingsComponent implements OnInit {
 
     this.loading = true;
     this.mfaError = '';
+    this.extractingCookies = true;
+    this.cookieExtractionMessage =
+      'Navigating through pages to extract cookies...';
 
     this.authService.submitMFA(this.mfaSessionId, this.mfaCode).subscribe({
       next: (response) => {
         console.log('MFA submission response:', response);
         this.loading = false;
+        this.extractingCookies = false;
+        this.cookieExtractionMessage = '';
 
         if (response.success) {
           this.showSuccess('MFA verified! Cookies saved successfully.');
@@ -908,6 +947,8 @@ export class SettingsComponent implements OnInit {
       error: (error) => {
         console.error('MFA submission error:', error);
         this.loading = false;
+        this.extractingCookies = false;
+        this.cookieExtractionMessage = '';
         this.mfaError = error.error?.message || 'Failed to submit MFA code';
       },
     });
@@ -933,6 +974,8 @@ export class SettingsComponent implements OnInit {
     this.mfaCode = '';
     this.mfaError = '';
     this.loading = false;
+    this.extractingCookies = false;
+    this.cookieExtractionMessage = '';
   }
 
   /**
