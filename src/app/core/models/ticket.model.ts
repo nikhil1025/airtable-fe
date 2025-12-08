@@ -3,7 +3,7 @@ export interface AirtableRecord {
   id: string;
   fields: Record<string, any>;
   createdTime: string;
-  rowId: string;
+  rowId?: string;
 }
 
 export interface SyncTicketsRequest {

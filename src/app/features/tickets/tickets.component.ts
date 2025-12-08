@@ -18,6 +18,7 @@ import {
 import { AirtableBase } from '../../core/models/project.model';
 import { AirtableTable } from '../../core/models/table.model';
 import { AirtableRecord } from '../../core/models/ticket.model';
+import { AirtablePaginationService } from '../../core/services/airtable-pagination.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ProjectService } from '../../core/services/project.service';
 import { TableService } from '../../core/services/table.service';
@@ -100,7 +101,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             <mat-icon class="stat-icon">confirmation_number</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Records</div>
-              <div class="stat-value">{{ rowData.length }}</div>
+              <div class="stat-value">{{ totalRecords }}</div>
             </div>
           </div>
 
@@ -141,17 +142,22 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         </div>
 
         <!-- AG Grid Table -->
-        <div class="card grid-container" *ngIf="!loading && rowData.length > 0">
+        <div
+          class="card grid-container"
+          *ngIf="!loading && selectedTableId && initialDataLoaded"
+        >
           <ag-grid-angular
             class="ag-theme-alpine"
             style="width: 100%; height: 600px;"
             [theme]="'legacy'"
-            [rowData]="rowData"
             [columnDefs]="columnDefs"
             [defaultColDef]="defaultColDef"
-            [pagination]="true"
-            [paginationPageSize]="20"
+            [rowModelType]="'infinite'"
+            [cacheBlockSize]="pageSize"
+            [maxBlocksInCache]="10"
+            [paginationPageSize]="pageSize"
             [paginationPageSizeSelector]="[10, 20, 50, 100]"
+            [pagination]="true"
             [animateRows]="true"
             [rowSelection]="'single'"
             (gridReady)="onGridReady($event)"
@@ -389,6 +395,11 @@ export class TicketsComponent implements OnInit {
   loading = false;
   searchText = '';
 
+  pageSize = 20;
+  totalRecords = 0;
+  offsetCache = new Map<number, string>();
+  initialDataLoaded = false;
+
   columnDefs: ColDef[] = [];
 
   // Initial default columns - will be replaced by dynamic columns from table schema
@@ -485,7 +496,8 @@ export class TicketsComponent implements OnInit {
     private projectService: ProjectService,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private paginationService: AirtablePaginationService
   ) {}
 
   ngOnInit() {
@@ -496,6 +508,62 @@ export class TicketsComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
+    if (this.initialDataLoaded) {
+      this.setupDataSource();
+    }
+  }
+
+  setupDataSource() {
+    if (!this.gridApi) return;
+
+    const dataSource = {
+      rowCount: undefined,
+      getRows: (params: any) => {
+        const page = Math.floor(params.startRow / this.pageSize);
+        const offset = this.offsetCache.get(page);
+
+        const userId = this.authService.currentUserId;
+        if (!userId) {
+          params.failCallback();
+          return;
+        }
+
+        this.paginationService
+          .getPaginatedRecords({
+            userId,
+            baseId: this.selectedProjectId,
+            tableId: this.selectedTableId,
+            offset,
+            pageSize: this.pageSize,
+          })
+          .subscribe({
+            next: (response) => {
+              if (response.success && response.data) {
+                const records = response.data.records;
+
+                if (response.data.offset) {
+                  this.offsetCache.set(page + 1, response.data.offset);
+                }
+
+                let lastRow = -1;
+                if (!response.data.hasMore) {
+                  lastRow = params.startRow + records.length;
+                }
+
+                params.successCallback(records, lastRow);
+              } else {
+                params.failCallback();
+              }
+            },
+            error: (error: any) => {
+              console.error('Failed to load records', error);
+              params.failCallback();
+            },
+          });
+      },
+    };
+
+    this.gridApi.setGridOption('datasource', dataSource);
   }
 
   loadProjects() {
@@ -548,6 +616,8 @@ export class TicketsComponent implements OnInit {
   }
 
   onTableChange() {
+    this.offsetCache.clear();
+    this.initialDataLoaded = false;
     this.loadRecords();
   }
 
@@ -561,24 +631,38 @@ export class TicketsComponent implements OnInit {
       return;
     }
 
-    // Load from cache
-    this.ticketService
-      .getTickets(userId, this.selectedProjectId, this.selectedTableId)
+    this.paginationService
+      .getPaginatedRecords({
+        userId,
+        baseId: this.selectedProjectId,
+        tableId: this.selectedTableId,
+        pageSize: this.pageSize,
+      })
       .subscribe({
         next: (response) => {
           if (response.success && response.data) {
-            this.rowData = response.data.records;
-            this.generateDynamicColumns();
-            if (this.rowData.length > 0) {
-              this.showSuccess(
-                `Loaded ${response.data.records.length} records from cache`
-              );
+            const sampleRecords = response.data.records;
+            if (sampleRecords.length > 0) {
+              this.rowData = sampleRecords;
+              this.generateDynamicColumns();
+
+              if (response.data.offset) {
+                this.offsetCache.set(1, response.data.offset);
+              }
+
+              this.initialDataLoaded = true;
+              if (this.gridApi) {
+                this.setupDataSource();
+              }
+              this.showSuccess('Records loaded from Airtable');
+            } else {
+              this.showError('No records found in this table');
             }
           }
           this.loading = false;
         },
         error: (error: any) => {
-          this.showError('Failed to load records');
+          this.showError('Failed to load records from Airtable');
           console.error(error);
           this.loading = false;
         },

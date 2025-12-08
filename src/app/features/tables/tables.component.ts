@@ -17,6 +17,7 @@ import {
 } from 'ag-grid-community';
 import { AirtableBase } from '../../core/models/project.model';
 import { AirtableTable } from '../../core/models/table.model';
+import { AirtablePaginationService } from '../../core/services/airtable-pagination.service';
 import { AuthService } from '../../core/services/auth.service';
 import { ProjectService } from '../../core/services/project.service';
 import { TableService } from '../../core/services/table.service';
@@ -79,7 +80,7 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             <mat-icon class="stat-icon">table_chart</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Tables</div>
-              <div class="stat-value">{{ rowData.length }}</div>
+              <div class="stat-value">{{ totalTables }}</div>
             </div>
           </div>
 
@@ -120,16 +121,18 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         </div>
 
         <!-- AG Grid Table -->
-        <div class="card grid-container" *ngIf="!loading && rowData.length > 0">
+        <div class="card grid-container" *ngIf="!loading && initialDataLoaded">
           <ag-grid-angular
             class="ag-theme-alpine"
             style="width: 100%; height: 500px;"
             [theme]="'legacy'"
-            [rowData]="rowData"
             [columnDefs]="columnDefs"
             [defaultColDef]="defaultColDef"
+            [rowModelType]="'infinite'"
+            [cacheBlockSize]="pageSize"
+            [maxBlocksInCache]="10"
             [pagination]="true"
-            [paginationPageSize]="20"
+            [paginationPageSize]="pageSize"
             [paginationPageSizeSelector]="[10, 20, 50, 100]"
             [animateRows]="true"
             (gridReady)="onGridReady($event)"
@@ -356,6 +359,11 @@ export class TablesComponent implements OnInit {
   loading = false;
   searchText = '';
 
+  pageSize = 20;
+  totalTables = 0;
+  offsetCache = new Map<number, string>();
+  initialDataLoaded = false;
+
   columnDefs: ColDef[] = [
     {
       field: 'name',
@@ -391,7 +399,8 @@ export class TablesComponent implements OnInit {
     private projectService: ProjectService,
     private authService: AuthService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private paginationService: AirtablePaginationService
   ) {}
 
   ngOnInit() {
@@ -400,6 +409,61 @@ export class TablesComponent implements OnInit {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
+    if (this.initialDataLoaded) {
+      this.setupDataSource();
+    }
+  }
+
+  setupDataSource() {
+    if (!this.gridApi || !this.selectedProjectId) return;
+
+    const dataSource = {
+      rowCount: undefined,
+      getRows: (params: any) => {
+        const page = Math.floor(params.startRow / this.pageSize);
+        const offset = this.offsetCache.get(page);
+
+        const userId = this.authService.currentUserId;
+        if (!userId || !this.selectedProjectId) {
+          params.failCallback();
+          return;
+        }
+
+        this.paginationService
+          .getPaginatedTables({
+            userId,
+            baseId: this.selectedProjectId,
+            offset,
+            pageSize: this.pageSize,
+          })
+          .subscribe({
+            next: (response) => {
+              if (response.success && response.data) {
+                const tables = response.data.tables || [];
+
+                if (response.data.offset) {
+                  this.offsetCache.set(page + 1, response.data.offset);
+                }
+
+                let lastRow = -1;
+                if (!response.data.hasMore) {
+                  lastRow = params.startRow + tables.length;
+                }
+
+                params.successCallback(tables, lastRow);
+              } else {
+                params.failCallback();
+              }
+            },
+            error: (error) => {
+              console.error('Error loading tables:', error);
+              params.failCallback();
+            },
+          });
+      },
+    };
+
+    this.gridApi.setGridOption('datasource', dataSource);
   }
 
   loadProjects() {
@@ -413,6 +477,7 @@ export class TablesComponent implements OnInit {
           this.projects = response.data.bases;
           if (this.projects.length > 0) {
             this.selectedProjectId = this.projects[0].id;
+            this.initialDataLoaded = false;
             this.loadTables();
           }
         }
@@ -428,31 +493,42 @@ export class TablesComponent implements OnInit {
     if (!this.selectedProjectId) return;
 
     this.loading = true;
+    this.offsetCache.clear();
     const userId = this.authService.currentUserId;
     if (!userId) {
       this.loading = false;
       return;
     }
 
-    // Load tables from cache
-    this.tableService.getTables(userId, this.selectedProjectId).subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.rowData = response.data.tables;
-          if (this.rowData.length > 0) {
-            this.showSuccess(
-              `Loaded ${response.data.tables.length} tables from cache`
-            );
+    this.paginationService
+      .getPaginatedTables({
+        userId,
+        baseId: this.selectedProjectId,
+        pageSize: this.pageSize,
+      })
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.rowData = response.data.tables || [];
+
+            if (response.data.offset) {
+              this.offsetCache.set(1, response.data.offset);
+            }
+
+            this.initialDataLoaded = true;
+            if (this.gridApi) {
+              this.setupDataSource();
+            }
+            this.showSuccess('Tables loaded from Airtable');
           }
-        }
-        this.loading = false;
-      },
-      error: (error) => {
-        this.showError('Failed to load tables');
-        console.error(error);
-        this.loading = false;
-      },
-    });
+          this.loading = false;
+        },
+        error: (error) => {
+          this.showError('Failed to load tables from Airtable');
+          console.error(error);
+          this.loading = false;
+        },
+      });
   }
 
   onProjectChange() {

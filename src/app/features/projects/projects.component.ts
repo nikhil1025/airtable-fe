@@ -16,6 +16,7 @@ import {
 } from 'ag-grid-community';
 import { Subscription } from 'rxjs';
 import { AirtableBase } from '../../core/models/project.model';
+import { AirtablePaginationService } from '../../core/services/airtable-pagination.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DataStateService } from '../../core/services/data-state.service';
 import { ProjectService } from '../../core/services/project.service';
@@ -60,14 +61,14 @@ ModuleRegistry.registerModules([AllCommunityModule]);
             <mat-icon class="stat-icon">folder</mat-icon>
             <div class="stat-content">
               <div class="stat-label">Total Projects</div>
-              <div class="stat-value">{{ rowData.length }}</div>
+              <div class="stat-value">{{ totalProjects }}</div>
             </div>
           </div>
 
           <div class="stat-card">
             <mat-icon class="stat-icon">check_circle</mat-icon>
             <div class="stat-content">
-              <div class="stat-label">Synced Today</div>
+              <div class="stat-label">Synced</div>
               <div class="stat-value">{{ rowData.length }}</div>
             </div>
           </div>
@@ -101,24 +102,24 @@ ModuleRegistry.registerModules([AllCommunityModule]);
         </div>
 
         <!-- AG Grid Table -->
-        <!-- <div class="card grid-container" *ngIf="!loading && rowData.length > 0"> -->
-        <div class="grid-wrapper">
+        <div class="grid-wrapper" *ngIf="!loading && initialDataLoaded">
           <ag-grid-angular
             class="ag-theme-alpine"
             style="height: 100%; width: 100%;"
             [theme]="'legacy'"
-            [rowData]="rowData"
             [columnDefs]="columnDefs"
             [defaultColDef]="defaultColDef"
+            [rowModelType]="'infinite'"
+            [cacheBlockSize]="pageSize"
+            [maxBlocksInCache]="10"
             [pagination]="true"
-            [paginationPageSize]="20"
+            [paginationPageSize]="pageSize"
             [paginationPageSizeSelector]="[10, 20, 50, 100]"
             [animateRows]="true"
             [domLayout]="'normal'"
             (gridReady)="onGridReady($event)"
           ></ag-grid-angular>
         </div>
-        <!-- </div> -->
 
         <div class="card empty-state" *ngIf="!loading && rowData.length === 0">
           <mat-icon class="empty-icon">folder</mat-icon>
@@ -339,6 +340,11 @@ export class ProjectsComponent implements OnInit, OnDestroy {
   loading = false;
   searchText = '';
 
+  pageSize = 20;
+  totalProjects = 0;
+  offsetCache = new Map<number, string>();
+  initialDataLoaded = false;
+
   columnDefs: ColDef[] = [
     {
       field: 'name',
@@ -370,29 +376,14 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   constructor(
     private projectService: ProjectService,
-    public authService: AuthService, // Made public for template access
+    public authService: AuthService,
     private dataStateService: DataStateService,
     private router: Router,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private paginationService: AirtablePaginationService
   ) {}
 
   ngOnInit() {
-    // Subscribe to projects state
-    const projectsSubscription = this.dataStateService
-      .getProjectsObservable()
-      .subscribe((projects) => {
-        this.rowData = projects;
-      });
-    this.subscriptions.push(projectsSubscription);
-
-    // Subscribe to loading state
-    const loadingSubscription = this.dataStateService
-      .getLoadingObservable()
-      .subscribe((loading) => {
-        this.loading = loading.projects;
-      });
-    this.subscriptions.push(loadingSubscription);
-
     this.loadProjects();
   }
 
@@ -402,52 +393,109 @@ export class ProjectsComponent implements OnInit, OnDestroy {
 
   onGridReady(params: GridReadyEvent) {
     this.gridApi = params.api;
-    // Force refresh
     this.gridApi.refreshCells();
     this.gridApi.sizeColumnsToFit();
+    if (this.initialDataLoaded) {
+      this.setupDataSource();
+    }
+  }
+
+  setupDataSource() {
+    if (!this.gridApi) return;
+
+    const dataSource = {
+      rowCount: undefined,
+      getRows: (params: any) => {
+        const page = Math.floor(params.startRow / this.pageSize);
+        const offset = this.offsetCache.get(page);
+
+        const userId = this.authService.currentUserId;
+        if (!userId) {
+          params.failCallback();
+          return;
+        }
+
+        this.paginationService
+          .getPaginatedBases({
+            userId,
+            offset,
+            pageSize: this.pageSize,
+          })
+          .subscribe({
+            next: (response) => {
+              if (response.success && response.data) {
+                const bases = response.data.bases || [];
+                this.dataStateService.setProjects(bases);
+
+                if (response.data.offset) {
+                  this.offsetCache.set(page + 1, response.data.offset);
+                }
+
+                let lastRow = -1;
+                if (!response.data.hasMore) {
+                  lastRow = params.startRow + bases.length;
+                }
+
+                params.successCallback(bases, lastRow);
+              } else {
+                params.failCallback();
+              }
+            },
+            error: (error) => {
+              console.error('Error loading projects:', error);
+              params.failCallback();
+            },
+          });
+      },
+    };
+
+    this.gridApi.setGridOption('datasource', dataSource);
   }
 
   loadProjects() {
     const userId = this.authService.currentUserId;
 
     if (!userId) {
-      console.error(' [Projects] No userId - user not authenticated');
+      console.error('No userId - user not authenticated');
       this.showError('User not authenticated. Please login first.');
       this.router.navigate(['/login']);
       return;
     }
 
-    // Always fetch fresh data from API - no caching
-    this.dataStateService.setLoading('projects', true);
+    this.loading = true;
+    this.offsetCache.clear();
 
-    // Use getBases for fast cached load
-    this.projectService.getBases(userId).subscribe({
-      next: (response) => {
-        this.dataStateService.setLoading('projects', false);
-        if (response.success && response.data) {
-          this.dataStateService.setProjects(response.data.bases || []);
+    this.paginationService
+      .getPaginatedBases({
+        userId,
+        pageSize: this.pageSize,
+      })
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.rowData = response.data.bases || [];
+            this.dataStateService.setProjects(this.rowData);
 
-          if (response.data.bases && response.data.bases.length > 0) {
-            this.showSuccess(
-              `Loaded ${response.data.bases.length} projects from cache`
-            );
-          } else {
-            this.showInfo(
-              'No projects found in cache. Click "Sync All" to fetch from Airtable.'
-            );
+            if (response.data.offset) {
+              this.offsetCache.set(1, response.data.offset);
+            }
+
+            this.initialDataLoaded = true;
+            if (this.gridApi) {
+              this.setupDataSource();
+            }
+            this.showSuccess('Projects loaded from Airtable');
           }
-        } else {
-          console.warn(' [Projects] No data in response:', response);
-        }
-      },
-      error: (error) => {
-        console.error(' [Projects] Error loading projects:', error);
-        this.dataStateService.setLoading('projects', false);
-        this.showError(
-          'Failed to load projects: ' + (error.message || 'Unknown error')
-        );
-      },
-    });
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading projects:', error);
+          this.loading = false;
+          this.showError(
+            'Failed to load projects: ' + (error.message || 'Unknown error')
+          );
+        },
+      });
   }
 
   syncAll() {
