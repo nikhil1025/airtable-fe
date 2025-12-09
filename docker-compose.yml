@@ -2,22 +2,17 @@ version: "3.8"
 
 services:
   frontend:
-    image: ubuntu:22.04
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: airtable-frontend:latest
     container_name: airtable-frontend
-    network_mode: host
     working_dir: /app
-    command: >
-      bash -c "
-      export DEBIAN_FRONTEND=noninteractive &&
-      apt-get update &&
-      apt-get install -y curl &&
-      curl -fsSL https://deb.nodesource.com/setup_22.x | bash - &&
-      apt-get install -y nodejs &&
-      npm install &&
-      npx ng serve --host 0.0.0.0 --port 4200 --disable-host-check
-      "
+    ports:
+      - "4200:4200"
     volumes:
       - .:/app
+      - /app/node_modules
     environment:
       - NODE_ENV=development
     restart: unless-stopped
